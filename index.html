@@ -109,6 +109,19 @@
   details.yeast summary { font-size: .8rem; font-weight: 600; color: var(--muted); cursor: pointer; margin-bottom: .75rem; }
   details.yeast summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
+  .extras { border-top: 1px solid var(--line); padding-top: .9rem; margin-top: .9rem; }
+  .chkline { display: flex; align-items: baseline; gap: .55rem; margin-bottom: .6rem; font-size: .85rem; }
+  .chkline input[type="checkbox"] { accent-color: var(--accent); flex-shrink: 0; }
+  .chkline input[type="checkbox"]:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .chkline label { font-weight: 600; flex: 1; min-width: 0; cursor: pointer; }
+  .chkline .chknote { display: block; font-size: .74rem; color: var(--muted); font-weight: 400; }
+  .chkline input[type="number"] {
+    width: 4.2rem; padding: .3rem .4rem; font-size: .9rem; font-family: inherit;
+    font-variant-numeric: tabular-nums; flex-shrink: 0;
+    border: 1px solid var(--line); border-radius: 6px; background: var(--field); color: var(--ink);
+  }
+  .chkline input[type="number"]:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
   .preset {
     width: 100%; margin-top: .35rem; padding: .6rem; border-radius: 7px; cursor: pointer;
     border: 1px solid var(--accent); background: transparent; color: var(--accent);
@@ -229,10 +242,10 @@
 
 <div class="wrap">
   <header class="masthead">
-    <p class="eyebrow">La ricetta di Malati di Pizza · Vincenzo Viscusi</p>
+    <p class="eyebrow">Il calcolatore di Paolo Taverna</p>
     <h1>Pizza Napoletana <em>con Biga</em></h1>
-    <p class="sub">Calcolatore e ricetta completa, fedele al
-      <a href="https://www.youtube.com/watch?v=ZVU9D4OkviM" target="_blank" rel="noopener">video del canale Malati di Pizza</a>.
+    <p class="sub">Calcolatore e ricetta completa della mia pizza con biga — ispirata al
+      <a href="https://www.youtube.com/watch?v=ZVU9D4OkviM" target="_blank" rel="noopener">video di Vincenzo Viscusi</a>.
       Biga al 50% di idratazione, impasto finale al 70%, pronta dopo sole 2 ore di appretto.</p>
   </header>
 
@@ -240,12 +253,7 @@
     <div class="panel">
       <h2>Il tuo lotto</h2>
 
-      <div class="seg" role="group" aria-label="Modalità di calcolo">
-        <button type="button" id="modePanetti" aria-pressed="true">Per panetti</button>
-        <button type="button" id="modeFarina" aria-pressed="false">Per farina totale</button>
-      </div>
-
-      <div class="duo" id="panettiFields">
+      <div class="duo">
         <div class="field">
           <label for="nPanetti">Panetti</label>
           <input type="number" id="nPanetti" min="1" max="30" step="1" value="6">
@@ -256,12 +264,6 @@
         </div>
       </div>
 
-      <div class="field" id="farinaField" hidden>
-        <label for="farinaTot">Farina totale (g)</label>
-        <input type="number" id="farinaTot" min="250" max="10000" step="50" value="1000">
-        <div class="hint">Nel video: 1000 g (500 biga + 500 chiusura)</div>
-      </div>
-
       <div class="field">
         <label for="idr">Idratazione totale <span class="val" id="idrVal">70%</span></label>
         <input type="range" id="idr" min="55" max="90" step="1" value="70">
@@ -269,8 +271,8 @@
 
       <div class="field">
         <label for="bigaPct">Farina in biga <span class="val" id="bigaPctVal">50%</span></label>
-        <input type="range" id="bigaPct" min="10" max="100" step="5" value="50">
-        <div class="hint">La biga resta idratata al 50%, come nel video</div>
+        <input type="range" id="bigaPct" min="45" max="100" step="5" value="50">
+        <div class="hint">La biga resta idratata al 50%; oltre l'80% serve il malto diastasico</div>
       </div>
 
       <div class="field">
@@ -300,7 +302,20 @@
         </div>
       </details>
 
-      <button type="button" class="preset" id="presetVideo">↩ Ricetta originale del video</button>
+      <div class="extras">
+        <div class="chkline">
+          <input type="checkbox" id="germe">
+          <label for="germe">Germe di grano<span class="chknote">5 g/kg in chiusura · omaggio al maestro Susta</span></label>
+        </div>
+        <div class="chkline">
+          <input type="checkbox" id="malto">
+          <label for="malto">Malto diastasico<span class="chknote">in chiusura, g per kg di farina</span></label>
+          <input type="number" id="maltoGkg" min="1" max="30" step="1" value="5" aria-label="Malto diastasico, grammi per kg di farina">
+        </div>
+        <p class="hint" id="maltoForced" hidden>Con più dell'80% di farina in biga il malto è obbligatorio: senza, in chiusura l'impasto non ha abbastanza zuccheri freschi da fermentare.</p>
+      </div>
+
+      <button type="button" class="preset" id="presetVideo">↩ Ripristina la ricetta di default</button>
     </div>
 
     <div class="results" aria-live="polite">
@@ -320,6 +335,8 @@
           <div class="row"><span class="what">Acqua <span class="note">fredda di frigo</span></span><span class="dots"></span><span class="qty" id="rChiAcqua">450 g</span></div>
           <div class="row"><span class="what">Sale</span><span class="dots"></span><span class="qty" id="rSale">20 g</span></div>
           <div class="row"><span class="what">Lievito <span class="note" id="rChiLievNote">fresco</span></span><span class="dots"></span><span class="qty" id="rChiLiev">5 g</span></div>
+          <div class="row" id="rGermeRow" hidden><span class="what">Germe di grano <span class="note">maestro Susta</span></span><span class="dots"></span><span class="qty" id="rGerme">5 g</span></div>
+          <div class="row" id="rMaltoRow" hidden><span class="what">Malto diastasico</span><span class="dots"></span><span class="qty" id="rMalto">5 g</span></div>
         </div>
       </div>
       <div class="totals">
@@ -423,14 +440,14 @@
   </aside>
 
   <footer class="colophon">
-    <p>Ricetta trascritta dal video <a href="https://www.youtube.com/watch?v=ZVU9D4OkviM" target="_blank" rel="noopener">«Pizza Napoletana con Biga»</a> di Malati di Pizza (Vincenzo Viscusi). Lievito secco = metà dose del fresco, come indicato nel video.</p>
+    <p>La ricetta di Paolo Taverna, ispirata al video <a href="https://www.youtube.com/watch?v=ZVU9D4OkviM" target="_blank" rel="noopener">«Pizza Napoletana con Biga»</a> di Vincenzo Viscusi. Lievito secco = metà dose del fresco.</p>
   </footer>
 </div>
 
 <script>
   // === CALC START ===
-  // Percentuali del panificatore ancorate alla farina totale.
-  // p: { mode:'panetti'|'farina', n, peso, farinaTot, idr, bigaPct, saleGkg, lievBigaPct, lievChiusuraPct, secco }
+  // Percentuali del panificatore ancorate alla farina totale, derivata da n × peso panetto.
+  // p: { n, peso, idr, bigaPct, saleGkg, lievBigaPct, lievChiusuraPct, secco, germe, malto, maltoGkg }
   // Ritorna quantità esatte (float, in grammi); l'arrotondamento avviene in render.
   function calcDough(p) {
     var idr = p.idr / 100;
@@ -439,33 +456,28 @@
     var yFactor = p.secco ? 0.5 : 1;
     var lievBigaPct = (p.lievBigaPct / 100) * yFactor;   // sulla farina della biga
     var lievChiPct = (p.lievChiusuraPct / 100) * yFactor; // sulla farina totale
+    var germePct = p.germe ? 0.005 : 0;                   // 5 g/kg di farina totale, in chiusura
+    var maltoPct = p.malto ? p.maltoGkg / 1000 : 0;       // in chiusura
     // fattore impasto: grammi di impasto per grammo di farina totale
-    var perFlour = 1 + idr + salePct + (lievBigaPct * bigaShare) + lievChiPct;
+    var perFlour = 1 + idr + salePct + (lievBigaPct * bigaShare) + lievChiPct + germePct + maltoPct;
 
-    var F; // farina totale
-    if (p.mode === 'farina') {
-      F = p.farinaTot;
-    } else {
-      F = (p.n * p.peso) / perFlour;
-    }
+    var F = (p.n * p.peso) / perFlour; // farina totale
 
     var bigaFarina = F * bigaShare;
-    var bigaAcqua = bigaFarina * 0.5; // biga sempre al 50%, come nel video
+    var bigaAcqua = bigaFarina * 0.5; // biga sempre al 50%
     var bigaLiev = bigaFarina * lievBigaPct;
     var chiFarina = F - bigaFarina;
     var chiAcqua = F * idr - bigaAcqua;
-    var sale = F * salePct;
-    var chiLiev = F * lievChiPct;
-    var impasto = F * perFlour;
 
     return {
       farinaTot: F,
       bigaFarina: bigaFarina, bigaAcqua: bigaAcqua, bigaLiev: bigaLiev,
       bigaTot: bigaFarina + bigaAcqua + bigaLiev,
-      chiFarina: chiFarina, chiAcqua: chiAcqua, sale: sale, chiLiev: chiLiev,
-      impasto: impasto,
-      panetti: p.mode === 'farina' ? impasto / p.peso : p.n,
-      peso: p.mode === 'farina' ? p.peso : impasto / p.n
+      chiFarina: chiFarina, chiAcqua: chiAcqua,
+      sale: F * salePct, chiLiev: F * lievChiPct,
+      germe: F * germePct, malto: F * maltoPct,
+      impasto: F * perFlour,
+      panetti: p.n, peso: p.peso
     };
   }
   // === CALC END ===
@@ -476,22 +488,23 @@
     // [chiave URL, campo params, min, max]
     ['n', 'n', 1, 30],
     ['p', 'peso', 100, 500],
-    ['f', 'farinaTot', 100, 20000],
     ['idr', 'idr', 55, 90],
-    ['biga', 'bigaPct', 10, 100],
+    ['biga', 'bigaPct', 45, 100],
     ['sale', 'saleGkg', 0, 35],
     ['lb', 'lievBigaPct', 0, 3],
-    ['lc', 'lievChiusuraPct', 0, 2]
+    ['lc', 'lievChiusuraPct', 0, 2],
+    ['mg', 'maltoGkg', 1, 30]
   ];
 
   function paramsToQuery(p) {
     var sp = new URLSearchParams();
-    sp.set('mode', p.mode === 'farina' ? 'farina' : 'panetti');
     CODEC_FIELDS.forEach(function (fld) {
       var v = p[fld[1]];
       if (v != null && isFinite(v)) sp.set(fld[0], String(Math.round(v * 100) / 100));
     });
     sp.set('liev', p.secco ? 's' : 'f');
+    sp.set('germe', p.germe ? '1' : '0');
+    sp.set('malto', p.malto ? '1' : '0');
     return sp.toString();
   }
 
@@ -499,8 +512,6 @@
   function queryToParams(qs) {
     var sp = new URLSearchParams(qs);
     var out = {};
-    var mode = sp.get('mode');
-    if (mode === 'farina' || mode === 'panetti') out.mode = mode;
     CODEC_FIELDS.forEach(function (fld) {
       if (!sp.has(fld[0])) return;
       var v = parseFloat(sp.get(fld[0]));
@@ -509,26 +520,31 @@
     var liev = sp.get('liev');
     if (liev === 's') out.secco = true;
     if (liev === 'f') out.secco = false;
+    if (sp.get('germe') === '1') out.germe = true;
+    if (sp.get('germe') === '0') out.germe = false;
+    if (sp.get('malto') === '1') out.malto = true;
+    if (sp.get('malto') === '0') out.malto = false;
     return out;
   }
   // === CODEC END ===
 
   var $ = function (id) { return document.getElementById(id); };
-  var state = { mode: 'panetti', secco: false };
+  var state = { secco: false };
   var STORE_KEY = 'pizzaBigaRicette';
 
   function readParams() {
     return {
-      mode: state.mode,
       n: Math.max(1, Math.round(+$('nPanetti').value || 1)),
       peso: Math.max(1, +$('pesoPanetto').value || 270),
-      farinaTot: Math.max(1, +$('farinaTot').value || 1000),
       idr: +$('idr').value,
       bigaPct: +$('bigaPct').value,
       saleGkg: Math.max(0, +$('sale').value || 0),
       lievBigaPct: Math.max(0, +$('lievBiga').value || 0),
       lievChiusuraPct: Math.max(0, +$('lievChiusura').value || 0),
-      secco: state.secco
+      secco: state.secco,
+      germe: $('germe').checked,
+      malto: $('malto').checked,
+      maltoGkg: Math.min(30, Math.max(1, +$('maltoGkg').value || 5))
     };
   }
 
@@ -536,6 +552,12 @@
   function g1(x) { return (Math.round(x * 10) / 10).toLocaleString('it-IT') + ' g'; }
 
   function render() {
+    // oltre l'80% di biga il malto diastasico è obbligatorio
+    var maltoObbligatorio = +$('bigaPct').value > 80;
+    if (maltoObbligatorio) $('malto').checked = true;
+    $('malto').disabled = maltoObbligatorio;
+    $('maltoForced').hidden = !maltoObbligatorio;
+
     var p = readParams();
     var r = calcDough(p);
     $('idrVal').textContent = p.idr + '%';
@@ -549,6 +571,10 @@
     $('rChiAcqua').textContent = g(r.chiAcqua);
     $('rSale').textContent = g1(r.sale);
     $('rChiLiev').textContent = g1(r.chiLiev);
+    $('rGermeRow').hidden = !p.germe;
+    $('rGerme').textContent = g1(r.germe);
+    $('rMaltoRow').hidden = !p.malto;
+    $('rMalto').textContent = g1(r.malto);
     $('rImpasto').textContent = g(r.impasto);
     $('rIdrOut').textContent = p.idr + '%';
 
@@ -556,12 +582,7 @@
     $('rBigaLievNote').textContent = tipo;
     $('rChiLievNote').textContent = tipo;
 
-    if (p.mode === 'farina') {
-      var nApprox = Math.round(r.panetti * 10) / 10;
-      $('rPanettiOut').innerHTML = '≈ <strong>' + nApprox.toLocaleString('it-IT') + '</strong> panetti da ' + Math.round(p.peso) + ' g';
-    } else {
-      $('rPanettiOut').innerHTML = p.n + ' panetti da <strong>' + Math.round(r.peso) + ' g</strong>';
-    }
+    $('rPanettiOut').innerHTML = p.n + ' panetti da <strong>' + Math.round(r.peso) + ' g</strong>';
   }
 
   var urlTimer = null;
@@ -576,14 +597,6 @@
 
   function onInput() { render(); scheduleUrlUpdate(); }
 
-  function setMode(m) {
-    state.mode = m;
-    $('modePanetti').setAttribute('aria-pressed', m === 'panetti');
-    $('modeFarina').setAttribute('aria-pressed', m === 'farina');
-    $('panettiFields').hidden = m !== 'panetti';
-    $('farinaField').hidden = m !== 'farina';
-    onInput();
-  }
   function setYeast(secco) {
     state.secco = secco;
     $('yFresco').setAttribute('aria-pressed', !secco);
@@ -595,18 +608,20 @@
   function applyParams(p) {
     if (p.n != null) $('nPanetti').value = p.n;
     if (p.peso != null) $('pesoPanetto').value = p.peso;
-    if (p.farinaTot != null) $('farinaTot').value = p.farinaTot;
     if (p.idr != null) $('idr').value = p.idr;
     if (p.bigaPct != null) $('bigaPct').value = p.bigaPct;
     if (p.saleGkg != null) $('sale').value = p.saleGkg;
     if (p.lievBigaPct != null) $('lievBiga').value = p.lievBigaPct;
     if (p.lievChiusuraPct != null) $('lievChiusura').value = p.lievChiusuraPct;
+    if (p.germe != null) $('germe').checked = p.germe;
+    if (p.malto != null) $('malto').checked = p.malto;
+    if (p.maltoGkg != null) $('maltoGkg').value = p.maltoGkg;
     if (p.secco != null) {
       state.secco = p.secco;
       $('yFresco').setAttribute('aria-pressed', !p.secco);
       $('ySecco').setAttribute('aria-pressed', p.secco);
     }
-    setMode(p.mode === 'farina' ? 'farina' : 'panetti');
+    onInput();
   }
 
   // ---------- Ricette salvate (localStorage) ----------
@@ -622,10 +637,9 @@
   }
 
   function recipeSummary(p) {
-    var lotto = p.mode === 'farina'
-      ? Math.round(p.farinaTot) + ' g farina'
-      : p.n + '×' + Math.round(p.peso) + ' g';
-    return lotto + ' · ' + p.idr + '% · biga ' + p.bigaPct + '% · liev. ' + (p.secco ? 'secco' : 'fresco');
+    return p.n + '×' + Math.round(p.peso) + ' g · ' + p.idr + '% · biga ' + p.bigaPct + '%' +
+      ' · liev. ' + (p.secco ? 'secco' : 'fresco') +
+      (p.germe ? ' · germe' : '') + (p.malto ? ' · malto' : '');
   }
 
   function renderRecipeList() {
@@ -692,19 +706,21 @@
   });
 
   // ---------- Wiring ----------
-  $('modePanetti').addEventListener('click', function () { setMode('panetti'); });
-  $('modeFarina').addEventListener('click', function () { setMode('farina'); });
   $('yFresco').addEventListener('click', function () { setYeast(false); });
   $('ySecco').addEventListener('click', function () { setYeast(true); });
 
-  ['nPanetti', 'pesoPanetto', 'farinaTot', 'idr', 'bigaPct', 'sale', 'lievBiga', 'lievChiusura'].forEach(function (id) {
+  ['nPanetti', 'pesoPanetto', 'idr', 'bigaPct', 'sale', 'lievBiga', 'lievChiusura', 'maltoGkg'].forEach(function (id) {
     $(id).addEventListener('input', onInput);
+  });
+  ['germe', 'malto'].forEach(function (id) {
+    $(id).addEventListener('change', onInput);
   });
 
   $('presetVideo').addEventListener('click', function () {
     applyParams({
-      mode: 'farina', farinaTot: 1000, idr: 70, bigaPct: 50, saleGkg: 20,
-      lievBigaPct: 1, lievChiusuraPct: 0.5, secco: false, peso: 270
+      n: 6, peso: 270, idr: 70, bigaPct: 50, saleGkg: 20,
+      lievBigaPct: 1, lievChiusuraPct: 0.5, secco: false,
+      germe: false, malto: false, maltoGkg: 5
     });
   });
 
