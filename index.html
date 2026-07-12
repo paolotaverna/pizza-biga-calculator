@@ -141,6 +141,15 @@
   }
   .chkline input[type="number"]:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 
+  .unitseg { display: flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; margin-bottom: .75rem; }
+  .unitseg button {
+    flex: 1; padding: .35rem .25rem; font-size: .74rem; font-weight: 600; border: 0; cursor: pointer;
+    background: transparent; color: var(--muted); font-family: inherit;
+    font-variant-numeric: tabular-nums;
+  }
+  .unitseg button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
+  .unitseg button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+
   .preset {
     width: 100%; margin-top: .35rem; padding: .6rem; border-radius: 7px; cursor: pointer;
     border: 1px solid var(--accent); background: transparent; color: var(--accent);
@@ -299,6 +308,11 @@
         <label for="bigaPct"><span data-i18n="flourInBiga">Farina in biga</span> <span class="val" id="bigaPctVal">50%</span></label>
         <input type="range" id="bigaPct" min="45" max="100" step="5" value="50">
         <div class="hint" data-i18n="bigaHint">La biga resta idratata al 50%; oltre l'80% serve il malto diastasico</div>
+      </div>
+
+      <div class="unitseg" role="group" aria-label="Unità sale e olio / Salt and oil unit">
+        <button type="button" id="unitG" aria-pressed="true">g/kg</button>
+        <button type="button" id="unitP" aria-pressed="false" data-i18n="unitPct">% farina</button>
       </div>
 
       <div class="field">
@@ -563,9 +577,10 @@
   // === CODEC END ===
 
   var $ = function (id) { return document.getElementById(id); };
-  var state = { secco: false, lang: 'it' };
+  var state = { secco: false, lang: 'it', unit: 'gkg' };
   var STORE_KEY = 'pizzaBigaRicette';
   var LANG_KEY = 'pizzaBigaLang';
+  var UNIT_KEY = 'pizzaBigaUnit'; // 'gkg' oppure 'pct' (percentuale del panificatore)
 
   // ---------- Testi IT / EN ----------
   var I18N = {
@@ -579,6 +594,7 @@
       totalHydr: 'Idratazione totale', flourInBiga: 'Farina in biga',
       bigaHint: "La biga resta idratata al 50%; oltre l'80% serve il malto diastasico",
       saltLabel: 'Sale (g / kg farina)', oilLabel: 'Olio (g / kg farina)',
+      saltLabelPct: 'Sale (% farina)', oilLabelPct: 'Olio (% farina)', unitPct: '% farina',
       oilRow: 'Olio', sumOlio: 'olio', yeast: 'Lievito', yeast2: 'Lievito',
       freshBtn: 'Fresco', dryBtn: 'Secco (½ dose)',
       yeastTuning: 'Regolazioni lievito',
@@ -610,7 +626,7 @@
       tl6: '<p class="when">2–3 h</p><p class="what">Appretto a T.A.</p><p class="how">oppure frigo: fino a 5–6 h</p>',
       tl7: '<p class="when">~90 sec</p><p class="what">Cottura</p><p class="how">460° sopra / 420° sotto</p>',
       step1: '<h3>Giorno 1 — Prepara la biga</h3><p>Sciogli il lievito nell\'acqua <strong>fredda di frigo</strong> (l\'acqua fredda elimina la variabile temperatura: così il risultato è riproducibile per tutti). Metti tutta la farina in una cassettina per impasto — più spaziosa, più comoda — e versaci l\'acqua.</p><p>Lavora con una forchetta (o agita la cassetta chiusa, il metodo "no stress" di Roberto Susta): l\'acqua entra in contatto con la farina e si formano gli <strong>gnocchetti</strong>. Quando tutta l\'acqua libera è stata catturata, raggruppa gli gnocchetti. È tutto: un preimpasto grezzo, con poco glutine ma glutine c\'è.</p><p class="tip">I nemici sono i residui di farina asciutta: nell\'impasto finale formano grumi. Meglio lavorare la biga qualche secondo in più per raccoglierli — fermenterà un filo più veloce, ma in frigo resta tutto sotto controllo.</p>',
-      step2: '<h3>Riposo e frigo</h3><p>Metti la biga in un contenitore, lasciala <strong>20 minuti a temperatura ambiente</strong>, poi appoggia sopra un <strong>panno umido</strong> (evita che la superficie si secchi in frigo) e trasferisci in frigorifero.</p><p>Fermenta <strong>da 12 a 24 ore</strong>: chiudi l\'impasto quando ti è comodo. L'ideale sono circa 16 ore. La biga sarà leggermente lievitata, spugnosa, piena di microbollicine e ragnatele di glutine: è giusta così.</p>',
+      step2: '<h3>Riposo e frigo</h3><p>Metti la biga in un contenitore, lasciala <strong>20 minuti a temperatura ambiente</strong>, poi appoggia sopra un <strong>panno umido</strong> (evita che la superficie si secchi in frigo) e trasferisci in frigorifero.</p><p>Fermenta <strong>da 12 a 24 ore</strong>: chiudi l\'impasto quando ti è comodo. L\'ideale sono circa 16 ore. La biga sarà leggermente lievitata, spugnosa, piena di microbollicine e ragnatele di glutine: è giusta così.</p>',
       step3: '<h3>Giorno 2 — Chiudi l\'impasto</h3><p>Metti la biga nell\'impastatrice con la seconda farina (qui basta una farina più debole, anche da supermercato: la forza l\'ha già messa la biga). Aggiungi il lievito, una buona parte dell\'acqua fredda e <strong>subito il sale</strong>, così non lo dimentichi. Aggiungi il resto dell\'acqua man mano che viene assorbita.</p><p>Partendo da un preimpasto la "zucca" si forma in fretta: servono <strong>12–15 minuti</strong>. L\'impasto è pronto quando si stacca dalla vasca e inizia a "scoppiettare". Temperatura finale target: tra <strong>21 °C e 25 °C</strong>.</p><p class="tip">Appena chiuso, l\'impasto ha già il rapporto perfetto tra tenacità ed estensibilità: è il grande vantaggio pratico della biga.</p>',
       step4: '<h3>Staglio e appretto</h3><p>Lascia rilassare l\'impasto <strong>~10 minuti</strong> (stagliarlo subito rovinerebbe la maglia glutinica, stressata dall\'impastamento). Poi forma i panetti — <strong>250–270 g</strong> per una pizza da piatto di 30–33 cm — con pochi movimenti, chiusura sul tavolo, senza stressare la pasta.</p><p>Sistemali in contenitori unti con un velo di <strong>olio di semi</strong> (quello d\'oliva è sprecato; in ogni caso non abbondare, o la semola si incolla al bordo in stesura). Due strade: <strong>2–3 ore a temperatura ambiente</strong> e si inforna, oppure in frigo per arrivare comodi anche a <strong>5–6 ore</strong>.</p><p class="tip">Per una stesura più facile, mezz\'ora prima di infornare puoi mettere i panetti in frigo: pasta più fresca, più semplice da stendere.</p>',
       step5: '<h3>Stesura e cottura</h3><p>Il panetto sarà carico d\'aria, morbido, e seguirà le mani senza tornare indietro. Stendi sulla semola, allarga, poi completa sulla pala.</p><p>La cottura ideale è in fornetto elettrico (es. F1 Gara Evolution, programma "pizza contemporanea"): <strong>460 °C sopra, 420 °C sotto</strong>, circa <strong>un minuto e mezzo</strong> con una girata a metà. Cornicione gonfio, sfogliato e asciutto, mollica strutturata, colore pieno ovunque.</p>',
@@ -630,6 +646,7 @@
       totalHydr: 'Total hydration', flourInBiga: 'Flour in the biga',
       bigaHint: 'The biga stays at 50% hydration; above 80% you need diastatic malt',
       saltLabel: 'Salt (g / kg flour)', oilLabel: 'Oil (g / kg flour)',
+      saltLabelPct: 'Salt (% of flour)', oilLabelPct: 'Oil (% of flour)', unitPct: '% flour',
       oilRow: 'Oil', sumOlio: 'oil', yeast: 'Yeast', yeast2: 'Yeast',
       freshBtn: 'Fresh', dryBtn: 'Dry (½ dose)',
       yeastTuning: 'Yeast fine-tuning',
@@ -675,6 +692,37 @@
 
   function t(key) { return I18N[state.lang][key] != null ? I18N[state.lang][key] : I18N.it[key]; }
 
+  // ---------- Unità sale/olio: g/kg <-> % del panificatore (1% = 10 g/kg) ----------
+  function displayToGkg(v) { return state.unit === 'pct' ? v * 10 : v; }
+  function gkgToDisplay(v) { return Math.round((state.unit === 'pct' ? v / 10 : v) * 100) / 100; }
+
+  function setUnit(u) {
+    var prev = state.unit;
+    u = u === 'pct' ? 'pct' : 'gkg';
+    if (prev !== u) {
+      // converte i valori mostrati mantenendo la stessa dose reale
+      var saleGkg = state.unit === 'pct' ? (+$('sale').value || 0) * 10 : (+$('sale').value || 0);
+      var olioGkg = state.unit === 'pct' ? (+$('olio').value || 0) * 10 : (+$('olio').value || 0);
+      state.unit = u;
+      $('sale').value = gkgToDisplay(saleGkg);
+      $('olio').value = gkgToDisplay(olioGkg);
+    }
+    state.unit = u;
+    try { localStorage.setItem(UNIT_KEY, u); } catch (e) { /* storage negato */ }
+    $('unitG').setAttribute('aria-pressed', u === 'gkg');
+    $('unitP').setAttribute('aria-pressed', u === 'pct');
+    var pct = u === 'pct';
+    $('sale').min = 0; $('sale').max = pct ? 3.5 : 35; $('sale').step = pct ? 0.05 : 0.5;
+    $('olio').min = 0; $('olio').max = pct ? 5 : 50; $('olio').step = pct ? 0.05 : 0.5;
+    var saleLab = document.querySelector('label[for="sale"]');
+    var olioLab = document.querySelector('label[for="olio"]');
+    saleLab.setAttribute('data-i18n', pct ? 'saltLabelPct' : 'saltLabel');
+    olioLab.setAttribute('data-i18n', pct ? 'oilLabelPct' : 'oilLabel');
+    saleLab.innerHTML = t(saleLab.getAttribute('data-i18n'));
+    olioLab.innerHTML = t(olioLab.getAttribute('data-i18n'));
+    render();
+  }
+
   function setLang(lang) {
     state.lang = lang === 'en' ? 'en' : 'it';
     try { localStorage.setItem(LANG_KEY, state.lang); } catch (e) { /* storage negato */ }
@@ -700,8 +748,8 @@
       peso: Math.max(1, +$('pesoPanetto').value || 270),
       idr: +$('idr').value,
       bigaPct: +$('bigaPct').value,
-      saleGkg: Math.max(0, +$('sale').value || 0),
-      olioGkg: Math.max(0, +$('olio').value || 0),
+      saleGkg: Math.max(0, displayToGkg(+$('sale').value || 0)),
+      olioGkg: Math.max(0, displayToGkg(+$('olio').value || 0)),
       lievBigaPct: Math.max(0, +$('lievBiga').value || 0),
       lievChiusuraPct: Math.max(0, +$('lievChiusura').value || 0),
       secco: state.secco,
@@ -775,8 +823,8 @@
     if (p.peso != null) $('pesoPanetto').value = p.peso;
     if (p.idr != null) $('idr').value = p.idr;
     if (p.bigaPct != null) $('bigaPct').value = p.bigaPct;
-    if (p.saleGkg != null) $('sale').value = p.saleGkg;
-    if (p.olioGkg != null) $('olio').value = p.olioGkg;
+    if (p.saleGkg != null) $('sale').value = gkgToDisplay(p.saleGkg);
+    if (p.olioGkg != null) $('olio').value = gkgToDisplay(p.olioGkg);
     if (p.lievBigaPct != null) $('lievBiga').value = p.lievBigaPct;
     if (p.lievChiusuraPct != null) $('lievChiusura').value = p.lievChiusuraPct;
     if (p.germe != null) $('germe').checked = p.germe;
@@ -891,6 +939,9 @@
     });
   });
 
+  $('unitG').addEventListener('click', function () { setUnit('gkg'); });
+  $('unitP').addEventListener('click', function () { setUnit('pct'); });
+
   $('langIt').addEventListener('click', function () { setLang('it'); });
   $('langEn').addEventListener('click', function () { setLang('en'); });
 
@@ -899,6 +950,10 @@
   try { savedLang = localStorage.getItem(LANG_KEY) || 'it'; } catch (e) { /* storage negato */ }
   var urlLang = new URLSearchParams(location.search).get('lang');
   if (urlLang === 'it' || urlLang === 'en') savedLang = urlLang;
+  var savedUnit = 'gkg';
+  try { savedUnit = localStorage.getItem(UNIT_KEY) || 'gkg'; } catch (e) { /* storage negato */ }
+  state.unit = savedUnit === 'pct' ? 'pct' : 'gkg';
+  setUnit(state.unit); // allinea etichette, limiti e valori mostrati
   var fromUrl = queryToParams(location.search);
   if (Object.keys(fromUrl).length > 0) applyParams(fromUrl);
   setLang(savedLang); // applica i testi e fa render + renderRecipeList
