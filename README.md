@@ -12,6 +12,7 @@ Live: https://pizza-biga-calculator.netlify.app
   ancorate alla farina totale; biga idratata al 50%.
 - **Controllo completo**: idratazione, farina in biga dal 45% al 100%, sale,
   lievito fresco/secco, dosi di lievito in biga e in chiusura.
+- **Olio** in chiusura (g/kg farina), di default 0 come da tradizione.
 - **Germe di grano** (5 g/kg in chiusura) — omaggio al maestro Susta.
 - **Malto diastasico** in chiusura, obbligatorio automaticamente sopra l'80%
   di biga: senza, l'impasto non ha abbastanza zuccheri freschi da fermentare.

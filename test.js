@@ -23,7 +23,7 @@ function eq(name, got, want, tol = 0.001) {
 
 // Base: la ricetta di default (valori del video sorgente). Con n×peso = 1730 g
 // la farina totale deve tornare esattamente a 1000 g.
-const base = { n: 1, peso: 1730, idr: 70, bigaPct: 50, saleGkg: 20, lievBigaPct: 1, lievChiusuraPct: 0.5, secco: false, germe: false, malto: false, maltoGkg: 5 };
+const base = { n: 1, peso: 1730, idr: 70, bigaPct: 50, saleGkg: 20, olioGkg: 0, lievBigaPct: 1, lievChiusuraPct: 0.5, secco: false, germe: false, malto: false, maltoGkg: 5 };
 
 // --- CALC: lotto di riferimento (1 kg farina) ---
 let r = calcDough(base);
@@ -38,6 +38,13 @@ eq('chiusura lievito = 5', r.chiLiev, 5);
 eq('impasto totale = 1730', r.impasto, 1730);
 eq('senza germe: 0 g', r.germe, 0);
 eq('senza malto: 0 g', r.malto, 0);
+eq('olio default: 0 g', r.olio, 0);
+
+// --- CALC: olio 20 g/kg ---
+r = calcDough({ ...base, peso: 1750, olioGkg: 20 });
+eq('olio: farina totale = 1000', r.farinaTot, 1000);
+eq('olio = 20 g/kg', r.olio, 20);
+eq('olio: impasto = 1750', r.impasto, 1750);
 
 // --- CALC: round-trip 6 × 270 e idratazione reale ---
 r = calcDough({ ...base, n: 6, peso: 270 });
@@ -63,15 +70,16 @@ eq('biga 100%: farina chiusura = 0', r.chiFarina, 0);
 eq('biga 100%: acqua chiusura = 200', r.chiAcqua, 200);
 
 // --- CODEC: round-trip completo ---
-const p1 = { n: 4, peso: 260, idr: 68, bigaPct: 85, saleGkg: 22.5, lievBigaPct: 1.2, lievChiusuraPct: 0.3, secco: true, germe: true, malto: true, maltoGkg: 8 };
+const p1 = { n: 4, peso: 260, idr: 68, bigaPct: 85, saleGkg: 22.5, olioGkg: 12.5, lievBigaPct: 1.2, lievChiusuraPct: 0.3, secco: true, germe: true, malto: true, maltoGkg: 8 };
 const back = queryToParams(paramsToQuery(p1));
 for (const k of Object.keys(p1)) {
   eq(`codec round-trip ${k}`, back[k], p1[k], 0.01);
 }
 
 // --- CODEC: valori fuori range vengono clampati ---
-let c = queryToParams('idr=200&biga=30&n=999&mg=99&liev=s&germe=1&malto=0');
+let c = queryToParams('idr=200&biga=30&n=999&mg=99&olio=999&liev=s&germe=1&malto=0');
 eq('clamp idr 200 -> 90', c.idr, 90);
+eq('clamp olio 999 -> 50', c.olioGkg, 50);
 eq('clamp biga 30 -> 45', c.bigaPct, 45);
 eq('clamp n 999 -> 30', c.n, 30);
 eq('clamp mg 99 -> 30', c.maltoGkg, 30);

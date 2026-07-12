@@ -307,6 +307,11 @@
       </div>
 
       <div class="field">
+        <label for="olio" data-i18n="oilLabel">Olio (g / kg farina)</label>
+        <input type="number" id="olio" min="0" max="50" step="0.5" value="0">
+      </div>
+
+      <div class="field">
         <label id="yeastTypeLabel" data-i18n="yeast">Lievito</label>
         <div class="seg" role="group" aria-labelledby="yeastTypeLabel">
           <button type="button" id="yFresco" aria-pressed="true" data-i18n="freshBtn">Fresco</button>
@@ -363,6 +368,7 @@
           <div class="row"><span class="what"><span data-i18n="yeast2">Lievito</span> <span class="note" id="rChiLievNote">fresco</span></span><span class="dots"></span><span class="qty" id="rChiLiev">5 g</span></div>
           <div class="row" id="rGermeRow" hidden><span class="what" data-i18n="germRow">Germe di grano <span class="note">maestro Susta</span></span><span class="dots"></span><span class="qty" id="rGerme">5 g</span></div>
           <div class="row" id="rMaltoRow" hidden><span class="what" data-i18n="maltRow">Malto diastasico</span><span class="dots"></span><span class="qty" id="rMalto">5 g</span></div>
+          <div class="row" id="rOlioRow" hidden><span class="what" data-i18n="oilRow">Olio</span><span class="dots"></span><span class="qty" id="rOlio">0 g</span></div>
         </div>
       </div>
       <div class="totals">
@@ -484,8 +490,9 @@
     var lievChiPct = (p.lievChiusuraPct / 100) * yFactor; // sulla farina totale
     var germePct = p.germe ? 0.005 : 0;                   // 5 g/kg di farina totale, in chiusura
     var maltoPct = p.malto ? p.maltoGkg / 1000 : 0;       // in chiusura
+    var olioPct = (p.olioGkg || 0) / 1000;                // in chiusura, di default 0
     // fattore impasto: grammi di impasto per grammo di farina totale
-    var perFlour = 1 + idr + salePct + (lievBigaPct * bigaShare) + lievChiPct + germePct + maltoPct;
+    var perFlour = 1 + idr + salePct + (lievBigaPct * bigaShare) + lievChiPct + germePct + maltoPct + olioPct;
 
     var F = (p.n * p.peso) / perFlour; // farina totale
 
@@ -501,7 +508,7 @@
       bigaTot: bigaFarina + bigaAcqua + bigaLiev,
       chiFarina: chiFarina, chiAcqua: chiAcqua,
       sale: F * salePct, chiLiev: F * lievChiPct,
-      germe: F * germePct, malto: F * maltoPct,
+      germe: F * germePct, malto: F * maltoPct, olio: F * olioPct,
       impasto: F * perFlour,
       panetti: p.n, peso: p.peso
     };
@@ -517,6 +524,7 @@
     ['idr', 'idr', 55, 90],
     ['biga', 'bigaPct', 45, 100],
     ['sale', 'saleGkg', 0, 35],
+    ['olio', 'olioGkg', 0, 50],
     ['lb', 'lievBigaPct', 0, 3],
     ['lc', 'lievChiusuraPct', 0, 2],
     ['mg', 'maltoGkg', 1, 30]
@@ -570,7 +578,8 @@
       balls: 'Panetti', weight: 'Peso (g)',
       totalHydr: 'Idratazione totale', flourInBiga: 'Farina in biga',
       bigaHint: "La biga resta idratata al 50%; oltre l'80% serve il malto diastasico",
-      saltLabel: 'Sale (g / kg farina)', yeast: 'Lievito', yeast2: 'Lievito',
+      saltLabel: 'Sale (g / kg farina)', oilLabel: 'Olio (g / kg farina)',
+      oilRow: 'Olio', sumOlio: 'olio', yeast: 'Lievito', yeast2: 'Lievito',
       freshBtn: 'Fresco', dryBtn: 'Secco (½ dose)',
       yeastTuning: 'Regolazioni lievito',
       yeastInBiga: 'In biga (% farina biga)', yeastAtMix: 'In chiusura (% farina tot.)',
@@ -620,7 +629,8 @@
       balls: 'Dough balls', weight: 'Weight (g)',
       totalHydr: 'Total hydration', flourInBiga: 'Flour in the biga',
       bigaHint: 'The biga stays at 50% hydration; above 80% you need diastatic malt',
-      saltLabel: 'Salt (g / kg flour)', yeast: 'Yeast', yeast2: 'Yeast',
+      saltLabel: 'Salt (g / kg flour)', oilLabel: 'Oil (g / kg flour)',
+      oilRow: 'Oil', sumOlio: 'oil', yeast: 'Yeast', yeast2: 'Yeast',
       freshBtn: 'Fresh', dryBtn: 'Dry (½ dose)',
       yeastTuning: 'Yeast fine-tuning',
       yeastInBiga: 'In the biga (% of biga flour)', yeastAtMix: 'At final mix (% of total flour)',
@@ -691,6 +701,7 @@
       idr: +$('idr').value,
       bigaPct: +$('bigaPct').value,
       saleGkg: Math.max(0, +$('sale').value || 0),
+      olioGkg: Math.max(0, +$('olio').value || 0),
       lievBigaPct: Math.max(0, +$('lievBiga').value || 0),
       lievChiusuraPct: Math.max(0, +$('lievChiusura').value || 0),
       secco: state.secco,
@@ -727,6 +738,8 @@
     $('rGerme').textContent = g1(r.germe);
     $('rMaltoRow').hidden = !p.malto;
     $('rMalto').textContent = g1(r.malto);
+    $('rOlioRow').hidden = !(p.olioGkg > 0);
+    $('rOlio').textContent = g1(r.olio);
     $('rImpasto').textContent = g(r.impasto);
     $('rIdrOut').textContent = p.idr + '%';
 
@@ -763,6 +776,7 @@
     if (p.idr != null) $('idr').value = p.idr;
     if (p.bigaPct != null) $('bigaPct').value = p.bigaPct;
     if (p.saleGkg != null) $('sale').value = p.saleGkg;
+    if (p.olioGkg != null) $('olio').value = p.olioGkg;
     if (p.lievBigaPct != null) $('lievBiga').value = p.lievBigaPct;
     if (p.lievChiusuraPct != null) $('lievChiusura').value = p.lievChiusuraPct;
     if (p.germe != null) $('germe').checked = p.germe;
@@ -791,7 +805,8 @@
   function recipeSummary(p) {
     return p.n + '×' + Math.round(p.peso) + ' g · ' + p.idr + '% · biga ' + p.bigaPct + '%' +
       ' · ' + (p.secco ? t('sumDry') : t('sumFresh')) +
-      (p.germe ? ' · ' + t('sumGerme') : '') + (p.malto ? ' · ' + t('sumMalto') : '');
+      (p.germe ? ' · ' + t('sumGerme') : '') + (p.malto ? ' · ' + t('sumMalto') : '') +
+      (p.olioGkg > 0 ? ' · ' + t('sumOlio') : '');
   }
 
   function renderRecipeList() {
@@ -861,7 +876,7 @@
   $('yFresco').addEventListener('click', function () { setYeast(false); });
   $('ySecco').addEventListener('click', function () { setYeast(true); });
 
-  ['nPanetti', 'pesoPanetto', 'idr', 'bigaPct', 'sale', 'lievBiga', 'lievChiusura', 'maltoGkg'].forEach(function (id) {
+  ['nPanetti', 'pesoPanetto', 'idr', 'bigaPct', 'sale', 'olio', 'lievBiga', 'lievChiusura', 'maltoGkg'].forEach(function (id) {
     $(id).addEventListener('input', onInput);
   });
   ['germe', 'malto'].forEach(function (id) {
@@ -870,7 +885,7 @@
 
   $('presetVideo').addEventListener('click', function () {
     applyParams({
-      n: 6, peso: 270, idr: 70, bigaPct: 50, saleGkg: 20,
+      n: 6, peso: 270, idr: 70, bigaPct: 50, saleGkg: 20, olioGkg: 0,
       lievBigaPct: 1, lievChiusuraPct: 0.5, secco: false,
       germe: false, malto: false, maltoGkg: 5
     });
