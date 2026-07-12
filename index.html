@@ -1,0 +1,721 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pizza Napoletana con Biga — Calcolatore</title>
+<style>
+  :root {
+    --bg: #F2F1ED;
+    --card: #FBFAF7;
+    --ink: #24211C;
+    --muted: #6E6759;
+    --line: #DDD9D0;
+    --accent: #AE2418;
+    --accent-ink: #FFFFFF;
+    --field: #FFFFFF;
+    --shadow: 0 1px 2px rgba(36,33,28,.06), 0 4px 16px rgba(36,33,28,.05);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #191512;
+      --card: #221D18;
+      --ink: #EFE9DE;
+      --muted: #A79C8C;
+      --line: #3A322A;
+      --accent: #E4574A;
+      --accent-ink: #1C0F0D;
+      --field: #2A241E;
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 4px 16px rgba(0,0,0,.25);
+    }
+  }
+  :root[data-theme="light"] {
+    --bg: #F2F1ED; --card: #FBFAF7; --ink: #24211C; --muted: #6E6759;
+    --line: #DDD9D0; --accent: #AE2418; --accent-ink: #FFFFFF; --field: #FFFFFF;
+    --shadow: 0 1px 2px rgba(36,33,28,.06), 0 4px 16px rgba(36,33,28,.05);
+  }
+  :root[data-theme="dark"] {
+    --bg: #191512; --card: #221D18; --ink: #EFE9DE; --muted: #A79C8C;
+    --line: #3A322A; --accent: #E4574A; --accent-ink: #1C0F0D; --field: #2A241E;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 4px 16px rgba(0,0,0,.25);
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    line-height: 1.55;
+    margin: 0;
+    padding: 0 1.25rem 4rem;
+  }
+  .wrap { max-width: 62rem; margin: 0 auto; }
+
+  header.masthead { text-align: center; padding: 3rem 0 2.25rem; }
+  .eyebrow {
+    font-size: .72rem; letter-spacing: .18em; text-transform: uppercase;
+    color: var(--muted); margin: 0 0 .75rem;
+  }
+  h1 {
+    font-family: "Iowan Old Style", Palatino, "Palatino Linotype", Georgia, serif;
+    font-size: clamp(2.1rem, 5.5vw, 3.4rem);
+    font-weight: 600; line-height: 1.08; margin: 0;
+    text-wrap: balance;
+  }
+  h1 em { color: var(--accent); font-style: italic; }
+  .masthead p.sub { color: var(--muted); max-width: 42rem; margin: 1rem auto 0; font-size: .95rem; }
+  .masthead a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+  .masthead a:hover { text-decoration: none; }
+
+  /* ---------- Calculator ---------- */
+  .calc {
+    display: grid; grid-template-columns: 20rem 1fr; gap: 1.25rem;
+    align-items: start;
+  }
+  @media (max-width: 47rem) { .calc { grid-template-columns: 1fr; } }
+
+  .panel {
+    background: var(--card); border: 1px solid var(--line); border-radius: 10px;
+    box-shadow: var(--shadow); padding: 1.25rem;
+  }
+  .panel h2 {
+    font-size: .72rem; letter-spacing: .16em; text-transform: uppercase;
+    color: var(--muted); font-weight: 600; margin: 0 0 1rem;
+  }
+
+  .seg { display: flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; margin-bottom: 1.1rem; }
+  .seg button {
+    flex: 1; padding: .5rem .25rem; font-size: .8rem; border: 0; cursor: pointer;
+    background: transparent; color: var(--muted); font-family: inherit;
+  }
+  .seg button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); font-weight: 600; }
+  .seg button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+
+  .field { margin-bottom: 1rem; }
+  .field label { display: flex; justify-content: space-between; align-items: baseline; font-size: .85rem; font-weight: 600; margin-bottom: .35rem; }
+  .field label .val { color: var(--accent); font-variant-numeric: tabular-nums; font-weight: 700; }
+  .field input[type="number"], .field input[type="text"] {
+    width: 100%; padding: .45rem .6rem; font-size: 1rem; font-family: inherit;
+    font-variant-numeric: tabular-nums;
+    border: 1px solid var(--line); border-radius: 7px; background: var(--field); color: var(--ink);
+  }
+  .field input[type="range"] { width: 100%; accent-color: var(--accent); }
+  .field input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .field .hint { font-size: .75rem; color: var(--muted); margin-top: .25rem; }
+
+  .duo { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem; }
+
+  details.yeast { border-top: 1px solid var(--line); padding-top: .9rem; margin-top: .25rem; }
+  details.yeast summary { font-size: .8rem; font-weight: 600; color: var(--muted); cursor: pointer; margin-bottom: .75rem; }
+  details.yeast summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .preset {
+    width: 100%; margin-top: .35rem; padding: .6rem; border-radius: 7px; cursor: pointer;
+    border: 1px solid var(--accent); background: transparent; color: var(--accent);
+    font-family: inherit; font-size: .85rem; font-weight: 600;
+  }
+  .preset:hover { background: var(--accent); color: var(--accent-ink); }
+  .preset:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  /* ---------- Saved recipes ---------- */
+  .saverow { display: flex; gap: .5rem; margin-bottom: .9rem; }
+  .saverow input { flex: 1; min-width: 0; padding: .45rem .6rem; font-size: .95rem; font-family: inherit; border: 1px solid var(--line); border-radius: 7px; background: var(--field); color: var(--ink); }
+  .saverow input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .saverow button {
+    padding: .45rem .9rem; border-radius: 7px; border: 0; cursor: pointer;
+    background: var(--accent); color: var(--accent-ink); font-family: inherit; font-size: .85rem; font-weight: 600;
+  }
+  .saverow button:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+  ul.recipes { list-style: none; margin: 0 0 .35rem; padding: 0; }
+  ul.recipes li { display: flex; align-items: center; gap: .5rem; border-top: 1px dotted var(--line); }
+  ul.recipes li:first-child { border-top: 0; }
+  ul.recipes .load {
+    flex: 1; min-width: 0; text-align: left; background: none; border: 0; cursor: pointer;
+    font-family: inherit; color: var(--ink); padding: .55rem 0; border-radius: 6px;
+  }
+  ul.recipes .load:hover .rname, ul.recipes .load:focus-visible .rname { color: var(--accent); }
+  ul.recipes .load:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  ul.recipes .rname { display: block; font-weight: 600; font-size: .9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  ul.recipes .rmeta { display: block; font-size: .74rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+  ul.recipes .del {
+    flex-shrink: 0; background: none; border: 0; cursor: pointer; color: var(--muted);
+    font-size: 1.05rem; line-height: 1; padding: .4rem; border-radius: 6px; font-family: inherit;
+  }
+  ul.recipes .del:hover, ul.recipes .del:focus-visible { color: var(--accent); }
+  ul.recipes .del:focus-visible { outline: 2px solid var(--accent); }
+  .empty { font-size: .8rem; color: var(--muted); margin: 0 0 .35rem; }
+  .linkbtn {
+    width: 100%; padding: .55rem; border-radius: 7px; cursor: pointer; margin-top: .5rem;
+    border: 1px solid var(--line); background: transparent; color: var(--muted);
+    font-family: inherit; font-size: .82rem; font-weight: 600;
+  }
+  .linkbtn:hover { border-color: var(--accent); color: var(--accent); }
+  .linkbtn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  /* ---------- Results ---------- */
+  .results { display: grid; gap: 1.25rem; }
+  .cards { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; }
+  @media (max-width: 34rem) { .cards { grid-template-columns: 1fr; } }
+
+  .rcard { background: var(--card); border: 1px solid var(--line); border-radius: 10px; box-shadow: var(--shadow); padding: 1.25rem 1.25rem 1rem; }
+  .rcard .day { font-size: .68rem; letter-spacing: .16em; text-transform: uppercase; color: var(--accent); font-weight: 700; margin: 0; }
+  .rcard h3 { font-family: "Iowan Old Style", Palatino, "Palatino Linotype", Georgia, serif; font-size: 1.45rem; font-weight: 600; margin: .2rem 0 .9rem; }
+  .row { display: flex; align-items: baseline; gap: .5rem; padding: .42rem 0; font-size: .95rem; }
+  .row + .row { border-top: 1px dotted var(--line); }
+  .row .what { flex-shrink: 0; }
+  .row .note { font-size: .74rem; color: var(--muted); }
+  .row .dots { flex: 1; border-bottom: 2px dotted var(--line); transform: translateY(-4px); }
+  .row .qty { font-variant-numeric: tabular-nums; font-weight: 700; white-space: nowrap; }
+
+  .totals {
+    background: var(--accent); color: var(--accent-ink); border-radius: 10px; box-shadow: var(--shadow);
+    padding: .9rem 1.25rem; display: flex; flex-wrap: wrap; gap: .4rem 2rem; align-items: baseline;
+    font-size: .95rem;
+  }
+  .totals strong { font-variant-numeric: tabular-nums; font-size: 1.15rem; }
+
+  /* ---------- Timeline ---------- */
+  section.block { margin-top: 3.5rem; }
+  .block > h2 {
+    font-family: "Iowan Old Style", Palatino, "Palatino Linotype", Georgia, serif;
+    font-size: 1.7rem; font-weight: 600; margin: 0 0 1.25rem; text-wrap: balance;
+  }
+  .tl-scroll { overflow-x: auto; padding-bottom: .5rem; }
+  .tl { display: flex; gap: 0; min-width: 40rem; }
+  .tl .stop { flex: 1; min-width: 8.5rem; position: relative; padding: 0 .75rem 0 0; }
+  .tl .stop::before {
+    content: ""; display: block; width: 11px; height: 11px; border-radius: 50%;
+    background: var(--accent); margin-bottom: .6rem;
+  }
+  .tl .stop::after {
+    content: ""; position: absolute; top: 5px; left: 14px; right: 2px; height: 1px; background: var(--line);
+  }
+  .tl .stop:last-child::after { display: none; }
+  .tl .when { font-size: .7rem; letter-spacing: .1em; text-transform: uppercase; color: var(--accent); font-weight: 700; }
+  .tl .what { font-size: .85rem; font-weight: 600; margin: .15rem 0; }
+  .tl .how { font-size: .75rem; color: var(--muted); }
+
+  /* ---------- Steps ---------- */
+  .step { display: grid; grid-template-columns: 3rem 1fr; gap: 1rem; padding: 1.4rem 0; border-top: 1px solid var(--line); }
+  .step:last-of-type { border-bottom: 1px solid var(--line); }
+  .step .num {
+    font-family: "Iowan Old Style", Palatino, "Palatino Linotype", Georgia, serif;
+    font-size: 1.9rem; color: var(--accent); line-height: 1; font-variant-numeric: tabular-nums;
+  }
+  .step h3 { margin: 0 0 .4rem; font-size: 1.05rem; }
+  .step p { margin: .4rem 0; max-width: 42rem; font-size: .93rem; }
+  .step .tip { font-size: .82rem; color: var(--muted); border-left: 3px solid var(--accent); padding-left: .75rem; margin-top: .7rem; max-width: 40rem; }
+
+  /* ---------- Fiocco ---------- */
+  .fiocco {
+    background: var(--card); border: 1px solid var(--line); border-radius: 10px; box-shadow: var(--shadow);
+    padding: 1.5rem 1.5rem 1.25rem; margin-top: 3.5rem;
+  }
+  .fiocco .day { font-size: .68rem; letter-spacing: .16em; text-transform: uppercase; color: var(--accent); font-weight: 700; margin: 0; }
+  .fiocco h2 { font-family: "Iowan Old Style", Palatino, "Palatino Linotype", Georgia, serif; font-size: 1.6rem; font-weight: 600; margin: .2rem 0 .6rem; }
+  .fiocco p { font-size: .93rem; max-width: 44rem; }
+  .fiocco ol { margin: .75rem 0 0; padding-left: 1.2rem; font-size: .93rem; }
+  .fiocco li { margin: .3rem 0; }
+
+  footer.colophon { margin-top: 3.5rem; font-size: .8rem; color: var(--muted); text-align: center; }
+  footer.colophon a { color: var(--accent); }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .qty, .totals strong { transition: opacity .15s ease; }
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header class="masthead">
+    <p class="eyebrow">La ricetta di Malati di Pizza · Vincenzo Viscusi</p>
+    <h1>Pizza Napoletana <em>con Biga</em></h1>
+    <p class="sub">Calcolatore e ricetta completa, fedele al
+      <a href="https://www.youtube.com/watch?v=ZVU9D4OkviM" target="_blank" rel="noopener">video del canale Malati di Pizza</a>.
+      Biga al 50% di idratazione, impasto finale al 70%, pronta dopo sole 2 ore di appretto.</p>
+  </header>
+
+  <section class="calc" aria-label="Calcolatore impasto">
+    <div class="panel">
+      <h2>Il tuo lotto</h2>
+
+      <div class="seg" role="group" aria-label="Modalità di calcolo">
+        <button type="button" id="modePanetti" aria-pressed="true">Per panetti</button>
+        <button type="button" id="modeFarina" aria-pressed="false">Per farina totale</button>
+      </div>
+
+      <div class="duo" id="panettiFields">
+        <div class="field">
+          <label for="nPanetti">Panetti</label>
+          <input type="number" id="nPanetti" min="1" max="30" step="1" value="6">
+        </div>
+        <div class="field">
+          <label for="pesoPanetto">Peso (g)</label>
+          <input type="number" id="pesoPanetto" min="180" max="350" step="5" value="270">
+        </div>
+      </div>
+
+      <div class="field" id="farinaField" hidden>
+        <label for="farinaTot">Farina totale (g)</label>
+        <input type="number" id="farinaTot" min="250" max="10000" step="50" value="1000">
+        <div class="hint">Nel video: 1000 g (500 biga + 500 chiusura)</div>
+      </div>
+
+      <div class="field">
+        <label for="idr">Idratazione totale <span class="val" id="idrVal">70%</span></label>
+        <input type="range" id="idr" min="55" max="90" step="1" value="70">
+      </div>
+
+      <div class="field">
+        <label for="bigaPct">Farina in biga <span class="val" id="bigaPctVal">50%</span></label>
+        <input type="range" id="bigaPct" min="10" max="100" step="5" value="50">
+        <div class="hint">La biga resta idratata al 50%, come nel video</div>
+      </div>
+
+      <div class="field">
+        <label for="sale">Sale (g / kg farina)</label>
+        <input type="number" id="sale" min="0" max="35" step="0.5" value="20">
+      </div>
+
+      <div class="field">
+        <label id="yeastTypeLabel">Lievito</label>
+        <div class="seg" role="group" aria-labelledby="yeastTypeLabel">
+          <button type="button" id="yFresco" aria-pressed="true">Fresco</button>
+          <button type="button" id="ySecco" aria-pressed="false">Secco (½ dose)</button>
+        </div>
+      </div>
+
+      <details class="yeast">
+        <summary>Regolazioni lievito</summary>
+        <div class="duo">
+          <div class="field">
+            <label for="lievBiga">In biga (% farina biga)</label>
+            <input type="number" id="lievBiga" min="0.2" max="3" step="0.1" value="1">
+          </div>
+          <div class="field">
+            <label for="lievChiusura">In chiusura (% farina tot.)</label>
+            <input type="number" id="lievChiusura" min="0" max="2" step="0.1" value="0.5">
+          </div>
+        </div>
+      </details>
+
+      <button type="button" class="preset" id="presetVideo">↩ Ricetta originale del video</button>
+    </div>
+
+    <div class="results" aria-live="polite">
+      <div class="cards">
+        <div class="rcard">
+          <p class="day">Giorno 1 · sera</p>
+          <h3>La biga</h3>
+          <div class="row"><span class="what">Farina forte <span class="note">W ≥ 300 (o Manitoba)</span></span><span class="dots"></span><span class="qty" id="rBigaFarina">500 g</span></div>
+          <div class="row"><span class="what">Acqua <span class="note">fredda di frigo</span></span><span class="dots"></span><span class="qty" id="rBigaAcqua">250 g</span></div>
+          <div class="row"><span class="what">Lievito <span class="note" id="rBigaLievNote">fresco</span></span><span class="dots"></span><span class="qty" id="rBigaLiev">5 g</span></div>
+        </div>
+        <div class="rcard">
+          <p class="day">Giorno 2 · chiusura</p>
+          <h3>L'impasto finale</h3>
+          <div class="row"><span class="what">Tutta la biga</span><span class="dots"></span><span class="qty" id="rBigaTot">755 g</span></div>
+          <div class="row"><span class="what">Farina <span class="note">anche debole, W ~290</span></span><span class="dots"></span><span class="qty" id="rChiFarina">500 g</span></div>
+          <div class="row"><span class="what">Acqua <span class="note">fredda di frigo</span></span><span class="dots"></span><span class="qty" id="rChiAcqua">450 g</span></div>
+          <div class="row"><span class="what">Sale</span><span class="dots"></span><span class="qty" id="rSale">20 g</span></div>
+          <div class="row"><span class="what">Lievito <span class="note" id="rChiLievNote">fresco</span></span><span class="dots"></span><span class="qty" id="rChiLiev">5 g</span></div>
+        </div>
+      </div>
+      <div class="totals">
+        <span>Impasto totale <strong id="rImpasto">1730 g</strong></span>
+        <span id="rPanettiOut">6 panetti da <strong>288 g</strong></span>
+        <span>Idratazione <strong id="rIdrOut">70%</strong></span>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>Le mie ricette</h2>
+      <div class="saverow">
+        <input type="text" id="recipeName" placeholder="Nome ricetta…" maxlength="40" aria-label="Nome della ricetta da salvare">
+        <button type="button" id="saveRecipe">Salva</button>
+      </div>
+      <p class="empty" id="recipesEmpty">Nessuna ricetta salvata: imposta il calcolatore e dalle un nome. Le ricette restano su questo dispositivo.</p>
+      <ul class="recipes" id="recipeList"></ul>
+      <button type="button" class="linkbtn" id="copyLink">Copia il link a questa ricetta</button>
+    </div>
+  </section>
+
+  <section class="block" aria-label="Timeline">
+    <h2>I due giorni, in breve</h2>
+    <div class="tl-scroll">
+      <div class="tl">
+        <div class="stop"><p class="when">Giorno 1</p><p class="what">Biga</p><p class="how">5–10 min di lavoro, a gnocchetti</p></div>
+        <div class="stop"><p class="when">+ 20 min</p><p class="what">Riposo a T.A.</p><p class="how">poi panno umido sopra</p></div>
+        <div class="stop"><p class="when">12–24 h</p><p class="what">Frigorifero</p><p class="how">nel video: ~16 ore</p></div>
+        <div class="stop"><p class="when">Giorno 2</p><p class="what">Chiusura</p><p class="how">impastatrice, 12–15 min</p></div>
+        <div class="stop"><p class="when">+ 10 min</p><p class="what">Riposo, poi staglio</p><p class="how">panetti in contenitori unti</p></div>
+        <div class="stop"><p class="when">2–3 h</p><p class="what">Appretto a T.A.</p><p class="how">oppure frigo: fino a 5–6 h</p></div>
+        <div class="stop"><p class="when">~90 sec</p><p class="what">Cottura</p><p class="how">460° sopra / 420° sotto</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="block" aria-label="Ricetta passo passo">
+    <h2>La ricetta, passo passo</h2>
+
+    <div class="step">
+      <div class="num">1</div>
+      <div>
+        <h3>Giorno 1 — Prepara la biga</h3>
+        <p>Sciogli il lievito nell'acqua <strong>fredda di frigo</strong> (l'acqua fredda elimina la variabile temperatura: così il risultato è riproducibile per tutti). Metti tutta la farina in una cassettina per impasto — più spaziosa, più comoda — e versaci l'acqua.</p>
+        <p>Lavora con una forchetta (o agita la cassetta chiusa, il metodo "no stress" di Roberto Susta): l'acqua entra in contatto con la farina e si formano gli <strong>gnocchetti</strong>. Quando tutta l'acqua libera è stata catturata, raggruppa gli gnocchetti. È tutto: un preimpasto grezzo, con poco glutine ma glutine c'è.</p>
+        <p class="tip">I nemici sono i residui di farina asciutta: nell'impasto finale formano grumi. Meglio lavorare la biga qualche secondo in più per raccoglierli — fermenterà un filo più veloce, ma in frigo resta tutto sotto controllo.</p>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="num">2</div>
+      <div>
+        <h3>Riposo e frigo</h3>
+        <p>Metti la biga in un contenitore, lasciala <strong>20 minuti a temperatura ambiente</strong>, poi appoggia sopra un <strong>panno umido</strong> (evita che la superficie si secchi in frigo) e trasferisci in frigorifero.</p>
+        <p>Fermenta <strong>da 12 a 24 ore</strong>: chiudi l'impasto quando ti è comodo. Nel video sono trascorse circa 16 ore. La biga sarà leggermente lievitata, spugnosa, piena di microbollicine e ragnatele di glutine: è giusta così.</p>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="num">3</div>
+      <div>
+        <h3>Giorno 2 — Chiudi l'impasto</h3>
+        <p>Metti la biga nell'impastatrice con la seconda farina (qui basta una farina più debole, anche da supermercato: la forza l'ha già messa la biga). Aggiungi il lievito, una buona parte dell'acqua fredda e <strong>subito il sale</strong>, così non lo dimentichi. Aggiungi il resto dell'acqua man mano che viene assorbita.</p>
+        <p>Partendo da un preimpasto la "zucca" si forma in fretta: servono <strong>12–15 minuti</strong>. L'impasto è pronto quando si stacca dalla vasca e inizia a "scoppiettare". Temperatura finale nel video: <strong>21 °C</strong> — e se chiudi qualche grado più alto, nessun problema.</p>
+        <p class="tip">Appena chiuso, l'impasto ha già il rapporto perfetto tra tenacità ed estensibilità: è il grande vantaggio pratico della biga.</p>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="num">4</div>
+      <div>
+        <h3>Staglio e appretto</h3>
+        <p>Lascia rilassare l'impasto <strong>~10 minuti</strong> (stagliarlo subito rovinerebbe la maglia glutinica, stressata dall'impastamento). Poi forma i panetti — <strong>250–270 g</strong> per una pizza da piatto di 30–33 cm — con pochi movimenti, chiusura sul tavolo, senza stressare la pasta.</p>
+        <p>Sistemali in contenitori unti con un velo di <strong>olio di semi</strong> (quello d'oliva è sprecato; in ogni caso non abbondare, o la semola si incolla al bordo in stesura). Due strade: <strong>2–3 ore a temperatura ambiente</strong> e si inforna, oppure in frigo per arrivare comodi anche a <strong>5–6 ore</strong>.</p>
+        <p class="tip">Per una stesura più facile, mezz'ora prima di infornare puoi mettere i panetti in frigo: pasta più fresca, più semplice da stendere.</p>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="num">5</div>
+      <div>
+        <h3>Stesura e cottura</h3>
+        <p>Il panetto sarà carico d'aria, morbido, e seguirà le mani senza tornare indietro. Stendi sulla semola, allarga, poi completa sulla pala.</p>
+        <p>Nel video la cottura è in fornetto elettrico (F1 Gara Evolution, programma "pizza contemporanea"): <strong>460 °C sopra, 420 °C sotto</strong>, circa <strong>un minuto e mezzo</strong> con una girata a metà. Cornicione gonfio, sfogliato e asciutto, mollica strutturata, colore pieno ovunque.</p>
+      </div>
+    </div>
+  </section>
+
+  <aside class="fiocco">
+    <p class="day">Bonus dal video · omaggio al maestro Susta</p>
+    <h2>La pizza "fiocco"</h2>
+    <p>Niente margherita: la farcitura vista nel video, «sapori semplici però molto goderecci» — da gattò di patate. Non è una pizza leggerissima, e va benissimo così.</p>
+    <ol>
+      <li><strong>Panna</strong> alla base</li>
+      <li><strong>Prosciutto cotto</strong> sfilacciato</li>
+      <li><strong>Mozzarella</strong>, non troppa</li>
+      <li><strong>Patata lessa schiacciata</strong>, in abbondanza</li>
+      <li><strong>Formaggio</strong>, tanto</li>
+      <li>Un giro d'<strong>olio</strong> e <strong>pepe nero</strong></li>
+    </ol>
+  </aside>
+
+  <footer class="colophon">
+    <p>Ricetta trascritta dal video <a href="https://www.youtube.com/watch?v=ZVU9D4OkviM" target="_blank" rel="noopener">«Pizza Napoletana con Biga»</a> di Malati di Pizza (Vincenzo Viscusi). Lievito secco = metà dose del fresco, come indicato nel video.</p>
+  </footer>
+</div>
+
+<script>
+  // === CALC START ===
+  // Percentuali del panificatore ancorate alla farina totale.
+  // p: { mode:'panetti'|'farina', n, peso, farinaTot, idr, bigaPct, saleGkg, lievBigaPct, lievChiusuraPct, secco }
+  // Ritorna quantità esatte (float, in grammi); l'arrotondamento avviene in render.
+  function calcDough(p) {
+    var idr = p.idr / 100;
+    var bigaShare = p.bigaPct / 100;
+    var salePct = p.saleGkg / 1000;
+    var yFactor = p.secco ? 0.5 : 1;
+    var lievBigaPct = (p.lievBigaPct / 100) * yFactor;   // sulla farina della biga
+    var lievChiPct = (p.lievChiusuraPct / 100) * yFactor; // sulla farina totale
+    // fattore impasto: grammi di impasto per grammo di farina totale
+    var perFlour = 1 + idr + salePct + (lievBigaPct * bigaShare) + lievChiPct;
+
+    var F; // farina totale
+    if (p.mode === 'farina') {
+      F = p.farinaTot;
+    } else {
+      F = (p.n * p.peso) / perFlour;
+    }
+
+    var bigaFarina = F * bigaShare;
+    var bigaAcqua = bigaFarina * 0.5; // biga sempre al 50%, come nel video
+    var bigaLiev = bigaFarina * lievBigaPct;
+    var chiFarina = F - bigaFarina;
+    var chiAcqua = F * idr - bigaAcqua;
+    var sale = F * salePct;
+    var chiLiev = F * lievChiPct;
+    var impasto = F * perFlour;
+
+    return {
+      farinaTot: F,
+      bigaFarina: bigaFarina, bigaAcqua: bigaAcqua, bigaLiev: bigaLiev,
+      bigaTot: bigaFarina + bigaAcqua + bigaLiev,
+      chiFarina: chiFarina, chiAcqua: chiAcqua, sale: sale, chiLiev: chiLiev,
+      impasto: impasto,
+      panetti: p.mode === 'farina' ? impasto / p.peso : p.n,
+      peso: p.mode === 'farina' ? p.peso : impasto / p.n
+    };
+  }
+  // === CALC END ===
+
+  // === CODEC START ===
+  // Serializza/deserializza i parametri nella query string, per link e segnalibri.
+  var CODEC_FIELDS = [
+    // [chiave URL, campo params, min, max]
+    ['n', 'n', 1, 30],
+    ['p', 'peso', 100, 500],
+    ['f', 'farinaTot', 100, 20000],
+    ['idr', 'idr', 55, 90],
+    ['biga', 'bigaPct', 10, 100],
+    ['sale', 'saleGkg', 0, 35],
+    ['lb', 'lievBigaPct', 0, 3],
+    ['lc', 'lievChiusuraPct', 0, 2]
+  ];
+
+  function paramsToQuery(p) {
+    var sp = new URLSearchParams();
+    sp.set('mode', p.mode === 'farina' ? 'farina' : 'panetti');
+    CODEC_FIELDS.forEach(function (fld) {
+      var v = p[fld[1]];
+      if (v != null && isFinite(v)) sp.set(fld[0], String(Math.round(v * 100) / 100));
+    });
+    sp.set('liev', p.secco ? 's' : 'f');
+    return sp.toString();
+  }
+
+  // Ritorna solo i campi presenti e validi (clampati ai limiti); gli assenti restano undefined.
+  function queryToParams(qs) {
+    var sp = new URLSearchParams(qs);
+    var out = {};
+    var mode = sp.get('mode');
+    if (mode === 'farina' || mode === 'panetti') out.mode = mode;
+    CODEC_FIELDS.forEach(function (fld) {
+      if (!sp.has(fld[0])) return;
+      var v = parseFloat(sp.get(fld[0]));
+      if (isFinite(v)) out[fld[1]] = Math.min(fld[3], Math.max(fld[2], v));
+    });
+    var liev = sp.get('liev');
+    if (liev === 's') out.secco = true;
+    if (liev === 'f') out.secco = false;
+    return out;
+  }
+  // === CODEC END ===
+
+  var $ = function (id) { return document.getElementById(id); };
+  var state = { mode: 'panetti', secco: false };
+  var STORE_KEY = 'pizzaBigaRicette';
+
+  function readParams() {
+    return {
+      mode: state.mode,
+      n: Math.max(1, Math.round(+$('nPanetti').value || 1)),
+      peso: Math.max(1, +$('pesoPanetto').value || 270),
+      farinaTot: Math.max(1, +$('farinaTot').value || 1000),
+      idr: +$('idr').value,
+      bigaPct: +$('bigaPct').value,
+      saleGkg: Math.max(0, +$('sale').value || 0),
+      lievBigaPct: Math.max(0, +$('lievBiga').value || 0),
+      lievChiusuraPct: Math.max(0, +$('lievChiusura').value || 0),
+      secco: state.secco
+    };
+  }
+
+  function g(x) { return Math.round(x) + ' g'; }
+  function g1(x) { return (Math.round(x * 10) / 10).toLocaleString('it-IT') + ' g'; }
+
+  function render() {
+    var p = readParams();
+    var r = calcDough(p);
+    $('idrVal').textContent = p.idr + '%';
+    $('bigaPctVal').textContent = p.bigaPct + '%';
+
+    $('rBigaFarina').textContent = g(r.bigaFarina);
+    $('rBigaAcqua').textContent = g(r.bigaAcqua);
+    $('rBigaLiev').textContent = g1(r.bigaLiev);
+    $('rBigaTot').textContent = '~' + g(r.bigaTot);
+    $('rChiFarina').textContent = g(r.chiFarina);
+    $('rChiAcqua').textContent = g(r.chiAcqua);
+    $('rSale').textContent = g1(r.sale);
+    $('rChiLiev').textContent = g1(r.chiLiev);
+    $('rImpasto').textContent = g(r.impasto);
+    $('rIdrOut').textContent = p.idr + '%';
+
+    var tipo = p.secco ? 'secco' : 'fresco';
+    $('rBigaLievNote').textContent = tipo;
+    $('rChiLievNote').textContent = tipo;
+
+    if (p.mode === 'farina') {
+      var nApprox = Math.round(r.panetti * 10) / 10;
+      $('rPanettiOut').innerHTML = '≈ <strong>' + nApprox.toLocaleString('it-IT') + '</strong> panetti da ' + Math.round(p.peso) + ' g';
+    } else {
+      $('rPanettiOut').innerHTML = p.n + ' panetti da <strong>' + Math.round(r.peso) + ' g</strong>';
+    }
+  }
+
+  var urlTimer = null;
+  function scheduleUrlUpdate() {
+    clearTimeout(urlTimer);
+    urlTimer = setTimeout(function () {
+      try {
+        history.replaceState(null, '', location.pathname + '?' + paramsToQuery(readParams()));
+      } catch (e) { /* file:// o iframe sandbox: il link resta copiabile dal pulsante */ }
+    }, 300);
+  }
+
+  function onInput() { render(); scheduleUrlUpdate(); }
+
+  function setMode(m) {
+    state.mode = m;
+    $('modePanetti').setAttribute('aria-pressed', m === 'panetti');
+    $('modeFarina').setAttribute('aria-pressed', m === 'farina');
+    $('panettiFields').hidden = m !== 'panetti';
+    $('farinaField').hidden = m !== 'farina';
+    onInput();
+  }
+  function setYeast(secco) {
+    state.secco = secco;
+    $('yFresco').setAttribute('aria-pressed', !secco);
+    $('ySecco').setAttribute('aria-pressed', secco);
+    onInput();
+  }
+
+  // Applica un oggetto parametri (parziale) a controlli e stato.
+  function applyParams(p) {
+    if (p.n != null) $('nPanetti').value = p.n;
+    if (p.peso != null) $('pesoPanetto').value = p.peso;
+    if (p.farinaTot != null) $('farinaTot').value = p.farinaTot;
+    if (p.idr != null) $('idr').value = p.idr;
+    if (p.bigaPct != null) $('bigaPct').value = p.bigaPct;
+    if (p.saleGkg != null) $('sale').value = p.saleGkg;
+    if (p.lievBigaPct != null) $('lievBiga').value = p.lievBigaPct;
+    if (p.lievChiusuraPct != null) $('lievChiusura').value = p.lievChiusuraPct;
+    if (p.secco != null) {
+      state.secco = p.secco;
+      $('yFresco').setAttribute('aria-pressed', !p.secco);
+      $('ySecco').setAttribute('aria-pressed', p.secco);
+    }
+    setMode(p.mode === 'farina' ? 'farina' : 'panetti');
+  }
+
+  // ---------- Ricette salvate (localStorage) ----------
+  function loadRecipes() {
+    try {
+      var raw = localStorage.getItem(STORE_KEY);
+      var list = raw ? JSON.parse(raw) : [];
+      return Array.isArray(list) ? list : [];
+    } catch (e) { return []; }
+  }
+  function saveRecipes(list) {
+    try { localStorage.setItem(STORE_KEY, JSON.stringify(list)); } catch (e) { /* storage pieno o negato */ }
+  }
+
+  function recipeSummary(p) {
+    var lotto = p.mode === 'farina'
+      ? Math.round(p.farinaTot) + ' g farina'
+      : p.n + '×' + Math.round(p.peso) + ' g';
+    return lotto + ' · ' + p.idr + '% · biga ' + p.bigaPct + '% · liev. ' + (p.secco ? 'secco' : 'fresco');
+  }
+
+  function renderRecipeList() {
+    var list = loadRecipes();
+    var ul = $('recipeList');
+    ul.textContent = '';
+    $('recipesEmpty').hidden = list.length > 0;
+    list.forEach(function (rec) {
+      var li = document.createElement('li');
+      var load = document.createElement('button');
+      load.type = 'button';
+      load.className = 'load';
+      load.title = 'Carica questa ricetta';
+      var nm = document.createElement('span');
+      nm.className = 'rname';
+      nm.textContent = rec.name;
+      var meta = document.createElement('span');
+      meta.className = 'rmeta';
+      meta.textContent = recipeSummary(rec.params);
+      load.appendChild(nm);
+      load.appendChild(meta);
+      load.addEventListener('click', function () {
+        applyParams(rec.params);
+        $('recipeName').value = rec.name;
+      });
+      var del = document.createElement('button');
+      del.type = 'button';
+      del.className = 'del';
+      del.textContent = '×';
+      del.setAttribute('aria-label', 'Elimina «' + rec.name + '»');
+      del.addEventListener('click', function () {
+        saveRecipes(loadRecipes().filter(function (r) { return r.name !== rec.name; }));
+        renderRecipeList();
+      });
+      li.appendChild(load);
+      li.appendChild(del);
+      ul.appendChild(li);
+    });
+  }
+
+  $('saveRecipe').addEventListener('click', function () {
+    var name = $('recipeName').value.trim();
+    var list = loadRecipes();
+    if (!name) name = 'Ricetta ' + (list.length + 1);
+    var rec = { name: name, params: readParams(), savedAt: new Date().toISOString() };
+    var idx = list.findIndex(function (r) { return r.name === name; });
+    if (idx >= 0) list[idx] = rec; else list.unshift(rec);
+    saveRecipes(list);
+    $('recipeName').value = name;
+    renderRecipeList();
+  });
+
+  // ---------- Copia link ----------
+  $('copyLink').addEventListener('click', function () {
+    var btn = $('copyLink');
+    var url = location.href.split('?')[0].split('#')[0] + '?' + paramsToQuery(readParams());
+    function done(ok) {
+      btn.textContent = ok ? 'Link copiato ✓' : url;
+      if (ok) setTimeout(function () { btn.textContent = 'Copia il link a questa ricetta'; }, 1800);
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(url).then(function () { done(true); }, function () { done(false); });
+    } else { done(false); }
+  });
+
+  // ---------- Wiring ----------
+  $('modePanetti').addEventListener('click', function () { setMode('panetti'); });
+  $('modeFarina').addEventListener('click', function () { setMode('farina'); });
+  $('yFresco').addEventListener('click', function () { setYeast(false); });
+  $('ySecco').addEventListener('click', function () { setYeast(true); });
+
+  ['nPanetti', 'pesoPanetto', 'farinaTot', 'idr', 'bigaPct', 'sale', 'lievBiga', 'lievChiusura'].forEach(function (id) {
+    $(id).addEventListener('input', onInput);
+  });
+
+  $('presetVideo').addEventListener('click', function () {
+    applyParams({
+      mode: 'farina', farinaTot: 1000, idr: 70, bigaPct: 50, saleGkg: 20,
+      lievBigaPct: 1, lievChiusuraPct: 0.5, secco: false, peso: 270
+    });
+  });
+
+  // ---------- Avvio: eventuale stato dall'URL, poi render ----------
+  var fromUrl = queryToParams(location.search);
+  if (Object.keys(fromUrl).length > 0) {
+    applyParams(fromUrl);
+  } else {
+    render();
+  }
+  renderRecipeList();
+</script>
+</body>
+</html>
