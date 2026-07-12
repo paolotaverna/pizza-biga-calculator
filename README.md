@@ -16,7 +16,11 @@ Live: https://pizza-biga-calculator.netlify.app
 - **Malto diastasico** in chiusura, obbligatorio automaticamente sopra l'80%
   di biga: senza, l'impasto non ha abbastanza zuccheri freschi da fermentare.
 - **Ripristino della ricetta di default** con un tocco.
+- **Bilingue IT / EN**: selettore in alto a destra, scelta ricordata sul
+  dispositivo e trasportata nei link condivisi (`?lang=en`).
 - **Ricette salvate** sul dispositivo (localStorage) con ricarica al volo.
+- **Mobile-first**: verificato su viewport iPhone (390px), Android (360px)
+  e iPad (820px).
 - **Link condivisibili**: tutto lo stato del calcolatore vive nella query string.
 
 ## Sviluppo

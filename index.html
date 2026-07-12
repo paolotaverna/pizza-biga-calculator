@@ -41,6 +41,7 @@
   }
 
   * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
   body {
     background: var(--bg);
     color: var(--ink);
@@ -49,7 +50,25 @@
     margin: 0;
     padding: 0 1.25rem 4rem;
   }
-  .wrap { max-width: 62rem; margin: 0 auto; }
+  .wrap { max-width: 62rem; margin: 0 auto; position: relative; }
+
+  .langseg {
+    position: absolute; top: 1rem; right: 0; z-index: 5;
+    display: flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden;
+    background: var(--card); box-shadow: var(--shadow);
+  }
+  .langseg button {
+    border: 0; background: transparent; color: var(--muted); cursor: pointer;
+    font-family: inherit; font-size: .75rem; font-weight: 700; letter-spacing: .06em;
+    padding: .4rem .7rem;
+  }
+  .langseg button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
+  .langseg button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+
+  /* niente zoom automatico su iOS: i campi restano ad almeno 16px sui piccoli schermi */
+  @media (max-width: 47rem) {
+    .field input[type="number"], .saverow input, .chkline input[type="number"] { font-size: 16px; }
+  }
 
   header.masthead { text-align: center; padding: 3rem 0 2.25rem; }
   .eyebrow {
@@ -168,14 +187,17 @@
   /* ---------- Results ---------- */
   .results { display: grid; gap: 1.25rem; }
   .cards { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; }
-  @media (max-width: 34rem) { .cards { grid-template-columns: 1fr; } }
+  /* colonna risultati stretta: sotto i 40rem la pagina è a una colonna e le card
+     si impilano; tra 47 e 62rem la colonna risultati è ~440px, troppo poco per due card */
+  @media (max-width: 40rem) { .cards { grid-template-columns: 1fr; } }
+  @media (min-width: 47.01rem) and (max-width: 62rem) { .cards { grid-template-columns: 1fr; } }
 
   .rcard { background: var(--card); border: 1px solid var(--line); border-radius: 10px; box-shadow: var(--shadow); padding: 1.25rem 1.25rem 1rem; }
   .rcard .day { font-size: .68rem; letter-spacing: .16em; text-transform: uppercase; color: var(--accent); font-weight: 700; margin: 0; }
   .rcard h3 { font-family: "Iowan Old Style", Palatino, "Palatino Linotype", Georgia, serif; font-size: 1.45rem; font-weight: 600; margin: .2rem 0 .9rem; }
   .row { display: flex; align-items: baseline; gap: .5rem; padding: .42rem 0; font-size: .95rem; }
   .row + .row { border-top: 1px dotted var(--line); }
-  .row .what { flex-shrink: 0; }
+  .row .what { min-width: 0; }
   .row .note { font-size: .74rem; color: var(--muted); }
   .row .dots { flex: 1; border-bottom: 2px dotted var(--line); transform: translateY(-4px); }
   .row .qty { font-variant-numeric: tabular-nums; font-weight: 700; white-space: nowrap; }
@@ -241,62 +263,66 @@
 <body>
 
 <div class="wrap">
+  <div class="langseg" role="group" aria-label="Lingua / Language">
+    <button type="button" id="langIt" aria-pressed="true">IT</button>
+    <button type="button" id="langEn" aria-pressed="false">EN</button>
+  </div>
   <header class="masthead">
-    <p class="eyebrow">Il calcolatore di Paolo Taverna</p>
-    <h1>Pizza Napoletana <em>con Biga</em></h1>
-    <p class="sub">Calcolatore e ricetta completa della mia pizza con biga — ispirata al
+    <p class="eyebrow" data-i18n="eyebrow">Il calcolatore di Paolo Taverna</p>
+    <h1 data-i18n="h1">Pizza Napoletana <em>con Biga</em></h1>
+    <p class="sub" data-i18n="sub">Calcolatore e ricetta completa della mia pizza con biga — ispirata al
       <a href="https://www.youtube.com/watch?v=ZVU9D4OkviM" target="_blank" rel="noopener">video di Vincenzo Viscusi</a>.
       Biga al 50% di idratazione, impasto finale al 70%, pronta dopo sole 2 ore di appretto.</p>
   </header>
 
   <section class="calc" aria-label="Calcolatore impasto">
     <div class="panel">
-      <h2>Il tuo lotto</h2>
+      <h2 data-i18n="yourBatch">Il tuo lotto</h2>
 
       <div class="duo">
         <div class="field">
-          <label for="nPanetti">Panetti</label>
+          <label for="nPanetti" data-i18n="balls">Panetti</label>
           <input type="number" id="nPanetti" min="1" max="30" step="1" value="6">
         </div>
         <div class="field">
-          <label for="pesoPanetto">Peso (g)</label>
+          <label for="pesoPanetto" data-i18n="weight">Peso (g)</label>
           <input type="number" id="pesoPanetto" min="180" max="350" step="5" value="270">
         </div>
       </div>
 
       <div class="field">
-        <label for="idr">Idratazione totale <span class="val" id="idrVal">70%</span></label>
+        <label for="idr"><span data-i18n="totalHydr">Idratazione totale</span> <span class="val" id="idrVal">70%</span></label>
         <input type="range" id="idr" min="55" max="90" step="1" value="70">
       </div>
 
       <div class="field">
-        <label for="bigaPct">Farina in biga <span class="val" id="bigaPctVal">50%</span></label>
+        <label for="bigaPct"><span data-i18n="flourInBiga">Farina in biga</span> <span class="val" id="bigaPctVal">50%</span></label>
         <input type="range" id="bigaPct" min="45" max="100" step="5" value="50">
-        <div class="hint">La biga resta idratata al 50%; oltre l'80% serve il malto diastasico</div>
+        <div class="hint" data-i18n="bigaHint">La biga resta idratata al 50%; oltre l'80% serve il malto diastasico</div>
       </div>
 
       <div class="field">
-        <label for="sale">Sale (g / kg farina)</label>
+        <label for="sale" data-i18n="saltLabel">Sale (g / kg farina)</label>
         <input type="number" id="sale" min="0" max="35" step="0.5" value="20">
       </div>
 
       <div class="field">
-        <label id="yeastTypeLabel">Lievito</label>
+        <label id="yeastTypeLabel" data-i18n="yeast">Lievito</label>
         <div class="seg" role="group" aria-labelledby="yeastTypeLabel">
-          <button type="button" id="yFresco" aria-pressed="true">Fresco</button>
-          <button type="button" id="ySecco" aria-pressed="false">Secco (½ dose)</button>
+          <button type="button" id="yFresco" aria-pressed="true" data-i18n="freshBtn">Fresco</button>
+          <button type="button" id="ySecco" aria-pressed="false" data-i18n="dryBtn">Secco (½ dose)</button>
         </div>
       </div>
 
       <details class="yeast">
-        <summary>Regolazioni lievito</summary>
+        <summary data-i18n="yeastTuning">Regolazioni lievito</summary>
         <div class="duo">
           <div class="field">
-            <label for="lievBiga">In biga (% farina biga)</label>
+            <label for="lievBiga" data-i18n="yeastInBiga">In biga (% farina biga)</label>
             <input type="number" id="lievBiga" min="0.2" max="3" step="0.1" value="1">
           </div>
           <div class="field">
-            <label for="lievChiusura">In chiusura (% farina tot.)</label>
+            <label for="lievChiusura" data-i18n="yeastAtMix">In chiusura (% farina tot.)</label>
             <input type="number" id="lievChiusura" min="0" max="2" step="0.1" value="0.5">
           </div>
         </div>
@@ -305,80 +331,80 @@
       <div class="extras">
         <div class="chkline">
           <input type="checkbox" id="germe">
-          <label for="germe">Germe di grano<span class="chknote">5 g/kg in chiusura · omaggio al maestro Susta</span></label>
+          <label for="germe" data-i18n="germLabel">Germe di grano<span class="chknote">5 g/kg in chiusura · omaggio al maestro Susta</span></label>
         </div>
         <div class="chkline">
           <input type="checkbox" id="malto">
-          <label for="malto">Malto diastasico<span class="chknote">in chiusura, g per kg di farina</span></label>
+          <label for="malto" data-i18n="maltLabel">Malto diastasico<span class="chknote">in chiusura, g per kg di farina</span></label>
           <input type="number" id="maltoGkg" min="1" max="30" step="1" value="5" aria-label="Malto diastasico, grammi per kg di farina">
         </div>
-        <p class="hint" id="maltoForced" hidden>Con più dell'80% di farina in biga il malto è obbligatorio: senza, in chiusura l'impasto non ha abbastanza zuccheri freschi da fermentare.</p>
+        <p class="hint" id="maltoForced" hidden data-i18n="maltForced">Con più dell'80% di farina in biga il malto è obbligatorio: senza, in chiusura l'impasto non ha abbastanza zuccheri freschi da fermentare.</p>
       </div>
 
-      <button type="button" class="preset" id="presetVideo">↩ Ripristina la ricetta di default</button>
+      <button type="button" class="preset" id="presetVideo" data-i18n="resetBtn">↩ Ripristina la ricetta di default</button>
     </div>
 
     <div class="results" aria-live="polite">
       <div class="cards">
         <div class="rcard">
-          <p class="day">Giorno 1 · sera</p>
-          <h3>La biga</h3>
-          <div class="row"><span class="what">Farina forte <span class="note">W ≥ 300 (o Manitoba)</span></span><span class="dots"></span><span class="qty" id="rBigaFarina">500 g</span></div>
-          <div class="row"><span class="what">Acqua <span class="note">fredda di frigo</span></span><span class="dots"></span><span class="qty" id="rBigaAcqua">250 g</span></div>
-          <div class="row"><span class="what">Lievito <span class="note" id="rBigaLievNote">fresco</span></span><span class="dots"></span><span class="qty" id="rBigaLiev">5 g</span></div>
+          <p class="day" data-i18n="day1">Giorno 1 · sera</p>
+          <h3 data-i18n="theBiga">La biga</h3>
+          <div class="row"><span class="what" data-i18n="strongFlour">Farina forte <span class="note">W ≥ 300 (o Manitoba)</span></span><span class="dots"></span><span class="qty" id="rBigaFarina">500 g</span></div>
+          <div class="row"><span class="what" data-i18n="coldWater">Acqua <span class="note">fredda di frigo</span></span><span class="dots"></span><span class="qty" id="rBigaAcqua">250 g</span></div>
+          <div class="row"><span class="what"><span data-i18n="yeast">Lievito</span> <span class="note" id="rBigaLievNote">fresco</span></span><span class="dots"></span><span class="qty" id="rBigaLiev">5 g</span></div>
         </div>
         <div class="rcard">
-          <p class="day">Giorno 2 · chiusura</p>
-          <h3>L'impasto finale</h3>
-          <div class="row"><span class="what">Tutta la biga</span><span class="dots"></span><span class="qty" id="rBigaTot">755 g</span></div>
-          <div class="row"><span class="what">Farina <span class="note">anche debole, W ~290</span></span><span class="dots"></span><span class="qty" id="rChiFarina">500 g</span></div>
-          <div class="row"><span class="what">Acqua <span class="note">fredda di frigo</span></span><span class="dots"></span><span class="qty" id="rChiAcqua">450 g</span></div>
-          <div class="row"><span class="what">Sale</span><span class="dots"></span><span class="qty" id="rSale">20 g</span></div>
-          <div class="row"><span class="what">Lievito <span class="note" id="rChiLievNote">fresco</span></span><span class="dots"></span><span class="qty" id="rChiLiev">5 g</span></div>
-          <div class="row" id="rGermeRow" hidden><span class="what">Germe di grano <span class="note">maestro Susta</span></span><span class="dots"></span><span class="qty" id="rGerme">5 g</span></div>
-          <div class="row" id="rMaltoRow" hidden><span class="what">Malto diastasico</span><span class="dots"></span><span class="qty" id="rMalto">5 g</span></div>
+          <p class="day" data-i18n="day2">Giorno 2 · chiusura</p>
+          <h3 data-i18n="finalDough">L'impasto finale</h3>
+          <div class="row"><span class="what" data-i18n="allBiga">Tutta la biga</span><span class="dots"></span><span class="qty" id="rBigaTot">755 g</span></div>
+          <div class="row"><span class="what" data-i18n="weakFlour">Farina <span class="note">anche debole, W ~290</span></span><span class="dots"></span><span class="qty" id="rChiFarina">500 g</span></div>
+          <div class="row"><span class="what" data-i18n="coldWater2">Acqua <span class="note">fredda di frigo</span></span><span class="dots"></span><span class="qty" id="rChiAcqua">450 g</span></div>
+          <div class="row"><span class="what" data-i18n="salt">Sale</span><span class="dots"></span><span class="qty" id="rSale">20 g</span></div>
+          <div class="row"><span class="what"><span data-i18n="yeast2">Lievito</span> <span class="note" id="rChiLievNote">fresco</span></span><span class="dots"></span><span class="qty" id="rChiLiev">5 g</span></div>
+          <div class="row" id="rGermeRow" hidden><span class="what" data-i18n="germRow">Germe di grano <span class="note">maestro Susta</span></span><span class="dots"></span><span class="qty" id="rGerme">5 g</span></div>
+          <div class="row" id="rMaltoRow" hidden><span class="what" data-i18n="maltRow">Malto diastasico</span><span class="dots"></span><span class="qty" id="rMalto">5 g</span></div>
         </div>
       </div>
       <div class="totals">
-        <span>Impasto totale <strong id="rImpasto">1730 g</strong></span>
+        <span><span data-i18n="totalDough">Impasto totale</span> <strong id="rImpasto">1730 g</strong></span>
         <span id="rPanettiOut">6 panetti da <strong>288 g</strong></span>
-        <span>Idratazione <strong id="rIdrOut">70%</strong></span>
+        <span><span data-i18n="hydr">Idratazione</span> <strong id="rIdrOut">70%</strong></span>
       </div>
     </div>
 
     <div class="panel">
-      <h2>Le mie ricette</h2>
+      <h2 data-i18n="myRecipes">Le mie ricette</h2>
       <div class="saverow">
-        <input type="text" id="recipeName" placeholder="Nome ricetta…" maxlength="40" aria-label="Nome della ricetta da salvare">
-        <button type="button" id="saveRecipe">Salva</button>
+        <input type="text" id="recipeName" placeholder="Nome ricetta…" maxlength="40" aria-label="Nome della ricetta da salvare" data-i18n-placeholder="namePh">
+        <button type="button" id="saveRecipe" data-i18n="save">Salva</button>
       </div>
-      <p class="empty" id="recipesEmpty">Nessuna ricetta salvata: imposta il calcolatore e dalle un nome. Le ricette restano su questo dispositivo.</p>
+      <p class="empty" id="recipesEmpty" data-i18n="noRecipes">Nessuna ricetta salvata: imposta il calcolatore e dalle un nome. Le ricette restano su questo dispositivo.</p>
       <ul class="recipes" id="recipeList"></ul>
-      <button type="button" class="linkbtn" id="copyLink">Copia il link a questa ricetta</button>
+      <button type="button" class="linkbtn" id="copyLink" data-i18n="copyLink">Copia il link a questa ricetta</button>
     </div>
   </section>
 
   <section class="block" aria-label="Timeline">
-    <h2>I due giorni, in breve</h2>
+    <h2 data-i18n="twoDays">I due giorni, in breve</h2>
     <div class="tl-scroll">
       <div class="tl">
-        <div class="stop"><p class="when">Giorno 1</p><p class="what">Biga</p><p class="how">5–10 min di lavoro, a gnocchetti</p></div>
-        <div class="stop"><p class="when">+ 20 min</p><p class="what">Riposo a T.A.</p><p class="how">poi panno umido sopra</p></div>
-        <div class="stop"><p class="when">12–24 h</p><p class="what">Frigorifero</p><p class="how">nel video: ~16 ore</p></div>
-        <div class="stop"><p class="when">Giorno 2</p><p class="what">Chiusura</p><p class="how">impastatrice, 12–15 min</p></div>
-        <div class="stop"><p class="when">+ 10 min</p><p class="what">Riposo, poi staglio</p><p class="how">panetti in contenitori unti</p></div>
-        <div class="stop"><p class="when">2–3 h</p><p class="what">Appretto a T.A.</p><p class="how">oppure frigo: fino a 5–6 h</p></div>
-        <div class="stop"><p class="when">~90 sec</p><p class="what">Cottura</p><p class="how">460° sopra / 420° sotto</p></div>
+        <div class="stop" data-i18n="tl1"><p class="when">Giorno 1</p><p class="what">Biga</p><p class="how">5–10 min di lavoro, a gnocchetti</p></div>
+        <div class="stop" data-i18n="tl2"><p class="when">+ 20 min</p><p class="what">Riposo a T.A.</p><p class="how">poi panno umido sopra</p></div>
+        <div class="stop" data-i18n="tl3"><p class="when">12–24 h</p><p class="what">Frigorifero</p><p class="how">nel video: ~16 ore</p></div>
+        <div class="stop" data-i18n="tl4"><p class="when">Giorno 2</p><p class="what">Chiusura</p><p class="how">impastatrice, 12–15 min</p></div>
+        <div class="stop" data-i18n="tl5"><p class="when">+ 10 min</p><p class="what">Riposo, poi staglio</p><p class="how">panetti in contenitori unti</p></div>
+        <div class="stop" data-i18n="tl6"><p class="when">2–3 h</p><p class="what">Appretto a T.A.</p><p class="how">oppure frigo: fino a 5–6 h</p></div>
+        <div class="stop" data-i18n="tl7"><p class="when">~90 sec</p><p class="what">Cottura</p><p class="how">460° sopra / 420° sotto</p></div>
       </div>
     </div>
   </section>
 
   <section class="block" aria-label="Ricetta passo passo">
-    <h2>La ricetta, passo passo</h2>
+    <h2 data-i18n="stepByStep">La ricetta, passo passo</h2>
 
     <div class="step">
       <div class="num">1</div>
-      <div>
+      <div data-i18n="step1">
         <h3>Giorno 1 — Prepara la biga</h3>
         <p>Sciogli il lievito nell'acqua <strong>fredda di frigo</strong> (l'acqua fredda elimina la variabile temperatura: così il risultato è riproducibile per tutti). Metti tutta la farina in una cassettina per impasto — più spaziosa, più comoda — e versaci l'acqua.</p>
         <p>Lavora con una forchetta (o agita la cassetta chiusa, il metodo "no stress" di Roberto Susta): l'acqua entra in contatto con la farina e si formano gli <strong>gnocchetti</strong>. Quando tutta l'acqua libera è stata catturata, raggruppa gli gnocchetti. È tutto: un preimpasto grezzo, con poco glutine ma glutine c'è.</p>
@@ -388,7 +414,7 @@
 
     <div class="step">
       <div class="num">2</div>
-      <div>
+      <div data-i18n="step2">
         <h3>Riposo e frigo</h3>
         <p>Metti la biga in un contenitore, lasciala <strong>20 minuti a temperatura ambiente</strong>, poi appoggia sopra un <strong>panno umido</strong> (evita che la superficie si secchi in frigo) e trasferisci in frigorifero.</p>
         <p>Fermenta <strong>da 12 a 24 ore</strong>: chiudi l'impasto quando ti è comodo. Nel video sono trascorse circa 16 ore. La biga sarà leggermente lievitata, spugnosa, piena di microbollicine e ragnatele di glutine: è giusta così.</p>
@@ -397,7 +423,7 @@
 
     <div class="step">
       <div class="num">3</div>
-      <div>
+      <div data-i18n="step3">
         <h3>Giorno 2 — Chiudi l'impasto</h3>
         <p>Metti la biga nell'impastatrice con la seconda farina (qui basta una farina più debole, anche da supermercato: la forza l'ha già messa la biga). Aggiungi il lievito, una buona parte dell'acqua fredda e <strong>subito il sale</strong>, così non lo dimentichi. Aggiungi il resto dell'acqua man mano che viene assorbita.</p>
         <p>Partendo da un preimpasto la "zucca" si forma in fretta: servono <strong>12–15 minuti</strong>. L'impasto è pronto quando si stacca dalla vasca e inizia a "scoppiettare". Temperatura finale nel video: <strong>21 °C</strong> — e se chiudi qualche grado più alto, nessun problema.</p>
@@ -407,7 +433,7 @@
 
     <div class="step">
       <div class="num">4</div>
-      <div>
+      <div data-i18n="step4">
         <h3>Staglio e appretto</h3>
         <p>Lascia rilassare l'impasto <strong>~10 minuti</strong> (stagliarlo subito rovinerebbe la maglia glutinica, stressata dall'impastamento). Poi forma i panetti — <strong>250–270 g</strong> per una pizza da piatto di 30–33 cm — con pochi movimenti, chiusura sul tavolo, senza stressare la pasta.</p>
         <p>Sistemali in contenitori unti con un velo di <strong>olio di semi</strong> (quello d'oliva è sprecato; in ogni caso non abbondare, o la semola si incolla al bordo in stesura). Due strade: <strong>2–3 ore a temperatura ambiente</strong> e si inforna, oppure in frigo per arrivare comodi anche a <strong>5–6 ore</strong>.</p>
@@ -417,7 +443,7 @@
 
     <div class="step">
       <div class="num">5</div>
-      <div>
+      <div data-i18n="step5">
         <h3>Stesura e cottura</h3>
         <p>Il panetto sarà carico d'aria, morbido, e seguirà le mani senza tornare indietro. Stendi sulla semola, allarga, poi completa sulla pala.</p>
         <p>Nel video la cottura è in fornetto elettrico (F1 Gara Evolution, programma "pizza contemporanea"): <strong>460 °C sopra, 420 °C sotto</strong>, circa <strong>un minuto e mezzo</strong> con una girata a metà. Cornicione gonfio, sfogliato e asciutto, mollica strutturata, colore pieno ovunque.</p>
@@ -425,7 +451,7 @@
     </div>
   </section>
 
-  <aside class="fiocco">
+  <aside class="fiocco" data-i18n="fiocco">
     <p class="day">Bonus dal video · omaggio al maestro Susta</p>
     <h2>La pizza "fiocco"</h2>
     <p>Niente margherita: la farcitura vista nel video, «sapori semplici però molto goderecci» — da gattò di patate. Non è una pizza leggerissima, e va benissimo così.</p>
@@ -440,7 +466,7 @@
   </aside>
 
   <footer class="colophon">
-    <p>La ricetta di Paolo Taverna, ispirata al video <a href="https://www.youtube.com/watch?v=ZVU9D4OkviM" target="_blank" rel="noopener">«Pizza Napoletana con Biga»</a> di Vincenzo Viscusi. Lievito secco = metà dose del fresco.</p>
+    <p data-i18n="footer">La ricetta di Paolo Taverna, ispirata al video <a href="https://www.youtube.com/watch?v=ZVU9D4OkviM" target="_blank" rel="noopener">«Pizza Napoletana con Biga»</a> di Vincenzo Viscusi. Lievito secco = metà dose del fresco.</p>
   </footer>
 </div>
 
@@ -529,8 +555,134 @@
   // === CODEC END ===
 
   var $ = function (id) { return document.getElementById(id); };
-  var state = { secco: false };
+  var state = { secco: false, lang: 'it' };
   var STORE_KEY = 'pizzaBigaRicette';
+  var LANG_KEY = 'pizzaBigaLang';
+
+  // ---------- Testi IT / EN ----------
+  var I18N = {
+    it: {
+      docTitle: 'Pizza Napoletana con Biga — Calcolatore',
+      eyebrow: 'Il calcolatore di Paolo Taverna',
+      h1: 'Pizza Napoletana <em>con Biga</em>',
+      sub: 'Calcolatore e ricetta completa della mia pizza con biga — ispirata al <a href="https://www.youtube.com/watch?v=ZVU9D4OkviM" target="_blank" rel="noopener">video di Vincenzo Viscusi</a>. Biga al 50% di idratazione, impasto finale al 70%, pronta dopo sole 2 ore di appretto.',
+      yourBatch: 'Il tuo lotto',
+      balls: 'Panetti', weight: 'Peso (g)',
+      totalHydr: 'Idratazione totale', flourInBiga: 'Farina in biga',
+      bigaHint: "La biga resta idratata al 50%; oltre l'80% serve il malto diastasico",
+      saltLabel: 'Sale (g / kg farina)', yeast: 'Lievito', yeast2: 'Lievito',
+      freshBtn: 'Fresco', dryBtn: 'Secco (½ dose)',
+      yeastTuning: 'Regolazioni lievito',
+      yeastInBiga: 'In biga (% farina biga)', yeastAtMix: 'In chiusura (% farina tot.)',
+      germLabel: 'Germe di grano<span class="chknote">5 g/kg in chiusura · omaggio al maestro Susta</span>',
+      maltLabel: 'Malto diastasico<span class="chknote">in chiusura, g per kg di farina</span>',
+      maltForced: "Con più dell'80% di farina in biga il malto è obbligatorio: senza, in chiusura l'impasto non ha abbastanza zuccheri freschi da fermentare.",
+      resetBtn: '↩ Ripristina la ricetta di default',
+      day1: 'Giorno 1 · sera', theBiga: 'La biga',
+      strongFlour: 'Farina forte <span class="note">W ≥ 300 (o Manitoba)</span>',
+      coldWater: 'Acqua <span class="note">fredda di frigo</span>',
+      coldWater2: 'Acqua <span class="note">fredda di frigo</span>',
+      day2: 'Giorno 2 · chiusura', finalDough: "L'impasto finale",
+      allBiga: 'Tutta la biga',
+      weakFlour: 'Farina <span class="note">anche debole, W ~290</span>',
+      salt: 'Sale',
+      germRow: 'Germe di grano <span class="note">maestro Susta</span>',
+      maltRow: 'Malto diastasico',
+      totalDough: 'Impasto totale', hydr: 'Idratazione',
+      myRecipes: 'Le mie ricette', namePh: 'Nome ricetta…', save: 'Salva',
+      noRecipes: 'Nessuna ricetta salvata: imposta il calcolatore e dalle un nome. Le ricette restano su questo dispositivo.',
+      copyLink: 'Copia il link a questa ricetta', copied: 'Link copiato ✓',
+      twoDays: 'I due giorni, in breve', stepByStep: 'La ricetta, passo passo',
+      tl1: '<p class="when">Giorno 1</p><p class="what">Biga</p><p class="how">5–10 min di lavoro, a gnocchetti</p>',
+      tl2: '<p class="when">+ 20 min</p><p class="what">Riposo a T.A.</p><p class="how">poi panno umido sopra</p>',
+      tl3: '<p class="when">12–24 h</p><p class="what">Frigorifero</p><p class="how">nel video: ~16 ore</p>',
+      tl4: '<p class="when">Giorno 2</p><p class="what">Chiusura</p><p class="how">impastatrice, 12–15 min</p>',
+      tl5: '<p class="when">+ 10 min</p><p class="what">Riposo, poi staglio</p><p class="how">panetti in contenitori unti</p>',
+      tl6: '<p class="when">2–3 h</p><p class="what">Appretto a T.A.</p><p class="how">oppure frigo: fino a 5–6 h</p>',
+      tl7: '<p class="when">~90 sec</p><p class="what">Cottura</p><p class="how">460° sopra / 420° sotto</p>',
+      step1: '<h3>Giorno 1 — Prepara la biga</h3><p>Sciogli il lievito nell\'acqua <strong>fredda di frigo</strong> (l\'acqua fredda elimina la variabile temperatura: così il risultato è riproducibile per tutti). Metti tutta la farina in una cassettina per impasto — più spaziosa, più comoda — e versaci l\'acqua.</p><p>Lavora con una forchetta (o agita la cassetta chiusa, il metodo "no stress" di Roberto Susta): l\'acqua entra in contatto con la farina e si formano gli <strong>gnocchetti</strong>. Quando tutta l\'acqua libera è stata catturata, raggruppa gli gnocchetti. È tutto: un preimpasto grezzo, con poco glutine ma glutine c\'è.</p><p class="tip">I nemici sono i residui di farina asciutta: nell\'impasto finale formano grumi. Meglio lavorare la biga qualche secondo in più per raccoglierli — fermenterà un filo più veloce, ma in frigo resta tutto sotto controllo.</p>',
+      step2: '<h3>Riposo e frigo</h3><p>Metti la biga in un contenitore, lasciala <strong>20 minuti a temperatura ambiente</strong>, poi appoggia sopra un <strong>panno umido</strong> (evita che la superficie si secchi in frigo) e trasferisci in frigorifero.</p><p>Fermenta <strong>da 12 a 24 ore</strong>: chiudi l\'impasto quando ti è comodo. Nel video sono trascorse circa 16 ore. La biga sarà leggermente lievitata, spugnosa, piena di microbollicine e ragnatele di glutine: è giusta così.</p>',
+      step3: '<h3>Giorno 2 — Chiudi l\'impasto</h3><p>Metti la biga nell\'impastatrice con la seconda farina (qui basta una farina più debole, anche da supermercato: la forza l\'ha già messa la biga). Aggiungi il lievito, una buona parte dell\'acqua fredda e <strong>subito il sale</strong>, così non lo dimentichi. Aggiungi il resto dell\'acqua man mano che viene assorbita.</p><p>Partendo da un preimpasto la "zucca" si forma in fretta: servono <strong>12–15 minuti</strong>. L\'impasto è pronto quando si stacca dalla vasca e inizia a "scoppiettare". Temperatura finale nel video: <strong>21 °C</strong> — e se chiudi qualche grado più alto, nessun problema.</p><p class="tip">Appena chiuso, l\'impasto ha già il rapporto perfetto tra tenacità ed estensibilità: è il grande vantaggio pratico della biga.</p>',
+      step4: '<h3>Staglio e appretto</h3><p>Lascia rilassare l\'impasto <strong>~10 minuti</strong> (stagliarlo subito rovinerebbe la maglia glutinica, stressata dall\'impastamento). Poi forma i panetti — <strong>250–270 g</strong> per una pizza da piatto di 30–33 cm — con pochi movimenti, chiusura sul tavolo, senza stressare la pasta.</p><p>Sistemali in contenitori unti con un velo di <strong>olio di semi</strong> (quello d\'oliva è sprecato; in ogni caso non abbondare, o la semola si incolla al bordo in stesura). Due strade: <strong>2–3 ore a temperatura ambiente</strong> e si inforna, oppure in frigo per arrivare comodi anche a <strong>5–6 ore</strong>.</p><p class="tip">Per una stesura più facile, mezz\'ora prima di infornare puoi mettere i panetti in frigo: pasta più fresca, più semplice da stendere.</p>',
+      step5: '<h3>Stesura e cottura</h3><p>Il panetto sarà carico d\'aria, morbido, e seguirà le mani senza tornare indietro. Stendi sulla semola, allarga, poi completa sulla pala.</p><p>Nel video la cottura è in fornetto elettrico (F1 Gara Evolution, programma "pizza contemporanea"): <strong>460 °C sopra, 420 °C sotto</strong>, circa <strong>un minuto e mezzo</strong> con una girata a metà. Cornicione gonfio, sfogliato e asciutto, mollica strutturata, colore pieno ovunque.</p>',
+      fiocco: '<p class="day">Bonus dal video · omaggio al maestro Susta</p><h2>La pizza "fiocco"</h2><p>Niente margherita: la farcitura vista nel video, «sapori semplici però molto goderecci» — da gattò di patate. Non è una pizza leggerissima, e va benissimo così.</p><ol><li><strong>Panna</strong> alla base</li><li><strong>Prosciutto cotto</strong> sfilacciato</li><li><strong>Mozzarella</strong>, non troppa</li><li><strong>Patata lessa schiacciata</strong>, in abbondanza</li><li><strong>Formaggio</strong>, tanto</li><li>Un giro d\'<strong>olio</strong> e <strong>pepe nero</strong></li></ol>',
+      footer: 'La ricetta di Paolo Taverna, ispirata al video <a href="https://www.youtube.com/watch?v=ZVU9D4OkviM" target="_blank" rel="noopener">«Pizza Napoletana con Biga»</a> di Vincenzo Viscusi. Lievito secco = metà dose del fresco.',
+      noteFresh: 'fresco', noteDry: 'secco', ballsOf: ' panetti da ',
+      sumFresh: 'liev. fresco', sumDry: 'liev. secco', sumGerme: 'germe', sumMalto: 'malto',
+      loadTitle: 'Carica questa ricetta', delAria: 'Elimina', recipeDefault: 'Ricetta '
+    },
+    en: {
+      docTitle: 'Neapolitan Pizza with Biga — Calculator',
+      eyebrow: "Paolo Taverna's calculator",
+      h1: 'Neapolitan Pizza <em>with Biga</em>',
+      sub: 'Calculator and complete recipe for my biga pizza — inspired by <a href="https://www.youtube.com/watch?v=ZVU9D4OkviM" target="_blank" rel="noopener">Vincenzo Viscusi\'s video</a>. Biga at 50% hydration, final dough at 70%, ready after just 2 hours of final proof.',
+      yourBatch: 'Your batch',
+      balls: 'Dough balls', weight: 'Weight (g)',
+      totalHydr: 'Total hydration', flourInBiga: 'Flour in the biga',
+      bigaHint: 'The biga stays at 50% hydration; above 80% you need diastatic malt',
+      saltLabel: 'Salt (g / kg flour)', yeast: 'Yeast', yeast2: 'Yeast',
+      freshBtn: 'Fresh', dryBtn: 'Dry (½ dose)',
+      yeastTuning: 'Yeast fine-tuning',
+      yeastInBiga: 'In the biga (% of biga flour)', yeastAtMix: 'At final mix (% of total flour)',
+      germLabel: 'Wheat germ<span class="chknote">5 g/kg at final mix · tribute to maestro Susta</span>',
+      maltLabel: 'Diastatic malt<span class="chknote">at final mix, g per kg of flour</span>',
+      maltForced: 'With more than 80% of the flour in the biga, malt is mandatory: without it, at the final mix the dough has no fresh sugars left to ferment.',
+      resetBtn: '↩ Reset to the default recipe',
+      day1: 'Day 1 · evening', theBiga: 'The biga',
+      strongFlour: 'Strong flour <span class="note">W ≥ 300 (or Manitoba)</span>',
+      coldWater: 'Water <span class="note">fridge-cold</span>',
+      coldWater2: 'Water <span class="note">fridge-cold</span>',
+      day2: 'Day 2 · final mix', finalDough: 'The final dough',
+      allBiga: 'All the biga',
+      weakFlour: 'Flour <span class="note">weaker is fine, W ~290</span>',
+      salt: 'Salt',
+      germRow: 'Wheat germ <span class="note">maestro Susta</span>',
+      maltRow: 'Diastatic malt',
+      totalDough: 'Total dough', hydr: 'Hydration',
+      myRecipes: 'My recipes', namePh: 'Recipe name…', save: 'Save',
+      noRecipes: 'No saved recipes yet: set up the calculator and give it a name. Recipes stay on this device.',
+      copyLink: 'Copy the link to this recipe', copied: 'Link copied ✓',
+      twoDays: 'The two days at a glance', stepByStep: 'The recipe, step by step',
+      tl1: '<p class="when">Day 1</p><p class="what">Biga</p><p class="how">5–10 min of work, into lumps</p>',
+      tl2: '<p class="when">+ 20 min</p><p class="what">Rest at room temp</p><p class="how">then a damp cloth on top</p>',
+      tl3: '<p class="when">12–24 h</p><p class="what">Refrigerator</p><p class="how">in the video: ~16 hours</p>',
+      tl4: '<p class="when">Day 2</p><p class="what">Final mix</p><p class="how">stand mixer, 12–15 min</p>',
+      tl5: '<p class="when">+ 10 min</p><p class="what">Rest, then divide</p><p class="how">balls into oiled containers</p>',
+      tl6: '<p class="when">2–3 h</p><p class="what">Proof at room temp</p><p class="how">or fridge: up to 5–6 h</p>',
+      tl7: '<p class="when">~90 sec</p><p class="what">Bake</p><p class="how">460° top / 420° bottom</p>',
+      step1: '<h3>Day 1 — Make the biga</h3><p>Dissolve the yeast in <strong>fridge-cold water</strong> (cold water removes temperature as a variable, so the result is reproducible for everyone). Put all the flour in a dough box — roomier, easier to work in — and pour in the water.</p><p>Work it with a fork (or shake the closed box — Roberto Susta\'s "no stress" method): as the water meets the flour, little lumps — the <strong>gnocchetti</strong> — form. Once all the free water has been captured, gather the lumps together. That\'s it: a rough pre-dough, with little gluten, but the gluten is there.</p><p class="tip">The enemy is leftover dry flour: in the final dough it turns into clumps. Better to work the biga a few extra seconds to pick it all up — it will ferment slightly faster, but in the fridge everything stays under control.</p>',
+      step2: '<h3>Rest and fridge</h3><p>Put the biga in a container, leave it <strong>20 minutes at room temperature</strong>, then lay a <strong>damp cloth</strong> on top (it keeps the surface from drying out in the fridge) and move it to the refrigerator.</p><p>Let it ferment <strong>12 to 24 hours</strong>: mix the final dough whenever it suits you. In the video about 16 hours went by. The biga will be slightly risen, spongy, full of tiny bubbles and gluten webs: that\'s exactly right.</p>',
+      step3: '<h3>Day 2 — Mix the final dough</h3><p>Put the biga in the mixer with the second flour (a weaker one is fine here, even supermarket flour: the strength already came from the biga). Add the yeast, a good part of the cold water and <strong>the salt right away</strong>, so you don\'t forget it. Add the rest of the water as it gets absorbed.</p><p>Starting from a pre-dough, the dough comes together fast: it takes <strong>12–15 minutes</strong>. It\'s ready when it pulls away from the bowl and starts to "crackle". Final temperature in the video: <strong>21 °C</strong> — and if yours ends a few degrees higher, no problem.</p><p class="tip">Freshly mixed, the dough already has the perfect balance of strength and extensibility: that\'s the biga\'s great practical advantage.</p>',
+      step4: '<h3>Dividing and final proof</h3><p>Let the dough relax <strong>~10 minutes</strong> (dividing it right away would damage the gluten network, stressed by mixing). Then shape the balls — <strong>250–270 g</strong> for a 30–33 cm plate pizza — with few movements, sealing on the bench, without stressing the dough.</p><p>Place them in containers greased with a thin film of <strong>seed oil</strong> (olive oil is wasted here; either way don\'t overdo it, or the semolina will stick to the rim while stretching). Two options: <strong>2–3 hours at room temperature</strong> and you bake, or into the fridge to comfortably reach <strong>5–6 hours</strong>.</p><p class="tip">For easier stretching, put the balls in the fridge half an hour before baking: cooler dough is simpler to open.</p>',
+      step5: '<h3>Stretching and baking</h3><p>The ball will be full of air, soft, and it will follow your hands without springing back. Stretch it on semolina, widen it, then finish on the peel.</p><p>In the video the bake is in an electric pizza oven (F1 Gara Evolution, "contemporary pizza" program): <strong>460 °C top, 420 °C bottom</strong>, about <strong>a minute and a half</strong> with one turn halfway. Puffed, flaky, dry cornicione, structured crumb, full colour everywhere.</p>',
+      fiocco: '<p class="day">Bonus from the video · tribute to maestro Susta</p><h2>The "fiocco" pizza</h2><p>No margherita: the topping seen in the video, «simple but very indulgent flavours» — potato-gattò territory. Not a light pizza, and that\'s perfectly fine.</p><ol><li><strong>Cream</strong> as the base</li><li><strong>Cooked ham</strong> (prosciutto cotto), shredded</li><li><strong>Mozzarella</strong>, not too much</li><li><strong>Crushed boiled potato</strong>, plenty</li><li><strong>Cheese</strong>, plenty</li><li>A drizzle of <strong>oil</strong> and <strong>black pepper</strong></li></ol>',
+      footer: 'Paolo Taverna\'s recipe, inspired by the video <a href="https://www.youtube.com/watch?v=ZVU9D4OkviM" target="_blank" rel="noopener">«Pizza Napoletana con Biga»</a> by Vincenzo Viscusi. Dry yeast = half the fresh dose.',
+      noteFresh: 'fresh', noteDry: 'dry', ballsOf: ' balls of ',
+      sumFresh: 'fresh yeast', sumDry: 'dry yeast', sumGerme: 'germ', sumMalto: 'malt',
+      loadTitle: 'Load this recipe', delAria: 'Delete', recipeDefault: 'Recipe '
+    }
+  };
+
+  function t(key) { return I18N[state.lang][key] != null ? I18N[state.lang][key] : I18N.it[key]; }
+
+  function setLang(lang) {
+    state.lang = lang === 'en' ? 'en' : 'it';
+    try { localStorage.setItem(LANG_KEY, state.lang); } catch (e) { /* storage negato */ }
+    document.documentElement.lang = state.lang;
+    document.title = t('docTitle');
+    $('langIt').setAttribute('aria-pressed', state.lang === 'it');
+    $('langEn').setAttribute('aria-pressed', state.lang === 'en');
+    document.querySelectorAll('[data-i18n]').forEach(function (el) {
+      var v = t(el.getAttribute('data-i18n'));
+      if (v != null) el.innerHTML = v;
+    });
+    document.querySelectorAll('[data-i18n-placeholder]').forEach(function (el) {
+      var v = t(el.getAttribute('data-i18n-placeholder'));
+      if (v != null) el.placeholder = v;
+    });
+    render();
+    renderRecipeList();
+  }
 
   function readParams() {
     return {
@@ -549,7 +701,7 @@
   }
 
   function g(x) { return Math.round(x) + ' g'; }
-  function g1(x) { return (Math.round(x * 10) / 10).toLocaleString('it-IT') + ' g'; }
+  function g1(x) { return (Math.round(x * 10) / 10).toLocaleString(state.lang === 'it' ? 'it-IT' : 'en-US') + ' g'; }
 
   function render() {
     // oltre l'80% di biga il malto diastasico è obbligatorio
@@ -578,11 +730,11 @@
     $('rImpasto').textContent = g(r.impasto);
     $('rIdrOut').textContent = p.idr + '%';
 
-    var tipo = p.secco ? 'secco' : 'fresco';
+    var tipo = p.secco ? t('noteDry') : t('noteFresh');
     $('rBigaLievNote').textContent = tipo;
     $('rChiLievNote').textContent = tipo;
 
-    $('rPanettiOut').innerHTML = p.n + ' panetti da <strong>' + Math.round(r.peso) + ' g</strong>';
+    $('rPanettiOut').innerHTML = p.n + t('ballsOf') + '<strong>' + Math.round(r.peso) + ' g</strong>';
   }
 
   var urlTimer = null;
@@ -590,7 +742,7 @@
     clearTimeout(urlTimer);
     urlTimer = setTimeout(function () {
       try {
-        history.replaceState(null, '', location.pathname + '?' + paramsToQuery(readParams()));
+        history.replaceState(null, '', location.pathname + '?' + paramsToQuery(readParams()) + '&lang=' + state.lang);
       } catch (e) { /* file:// o iframe sandbox: il link resta copiabile dal pulsante */ }
     }, 300);
   }
@@ -638,8 +790,8 @@
 
   function recipeSummary(p) {
     return p.n + '×' + Math.round(p.peso) + ' g · ' + p.idr + '% · biga ' + p.bigaPct + '%' +
-      ' · liev. ' + (p.secco ? 'secco' : 'fresco') +
-      (p.germe ? ' · germe' : '') + (p.malto ? ' · malto' : '');
+      ' · ' + (p.secco ? t('sumDry') : t('sumFresh')) +
+      (p.germe ? ' · ' + t('sumGerme') : '') + (p.malto ? ' · ' + t('sumMalto') : '');
   }
 
   function renderRecipeList() {
@@ -652,7 +804,7 @@
       var load = document.createElement('button');
       load.type = 'button';
       load.className = 'load';
-      load.title = 'Carica questa ricetta';
+      load.title = t('loadTitle');
       var nm = document.createElement('span');
       nm.className = 'rname';
       nm.textContent = rec.name;
@@ -669,7 +821,7 @@
       del.type = 'button';
       del.className = 'del';
       del.textContent = '×';
-      del.setAttribute('aria-label', 'Elimina «' + rec.name + '»');
+      del.setAttribute('aria-label', t('delAria') + ' «' + rec.name + '»');
       del.addEventListener('click', function () {
         saveRecipes(loadRecipes().filter(function (r) { return r.name !== rec.name; }));
         renderRecipeList();
@@ -683,7 +835,7 @@
   $('saveRecipe').addEventListener('click', function () {
     var name = $('recipeName').value.trim();
     var list = loadRecipes();
-    if (!name) name = 'Ricetta ' + (list.length + 1);
+    if (!name) name = t('recipeDefault') + (list.length + 1);
     var rec = { name: name, params: readParams(), savedAt: new Date().toISOString() };
     var idx = list.findIndex(function (r) { return r.name === name; });
     if (idx >= 0) list[idx] = rec; else list.unshift(rec);
@@ -695,10 +847,10 @@
   // ---------- Copia link ----------
   $('copyLink').addEventListener('click', function () {
     var btn = $('copyLink');
-    var url = location.href.split('?')[0].split('#')[0] + '?' + paramsToQuery(readParams());
+    var url = location.href.split('?')[0].split('#')[0] + '?' + paramsToQuery(readParams()) + '&lang=' + state.lang;
     function done(ok) {
-      btn.textContent = ok ? 'Link copiato ✓' : url;
-      if (ok) setTimeout(function () { btn.textContent = 'Copia il link a questa ricetta'; }, 1800);
+      btn.textContent = ok ? t('copied') : url;
+      if (ok) setTimeout(function () { btn.textContent = t('copyLink'); }, 1800);
     }
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(url).then(function () { done(true); }, function () { done(false); });
@@ -724,14 +876,17 @@
     });
   });
 
-  // ---------- Avvio: eventuale stato dall'URL, poi render ----------
+  $('langIt').addEventListener('click', function () { setLang('it'); });
+  $('langEn').addEventListener('click', function () { setLang('en'); });
+
+  // ---------- Avvio: lingua (URL > salvata), eventuale stato dall'URL, poi render ----------
+  var savedLang = 'it';
+  try { savedLang = localStorage.getItem(LANG_KEY) || 'it'; } catch (e) { /* storage negato */ }
+  var urlLang = new URLSearchParams(location.search).get('lang');
+  if (urlLang === 'it' || urlLang === 'en') savedLang = urlLang;
   var fromUrl = queryToParams(location.search);
-  if (Object.keys(fromUrl).length > 0) {
-    applyParams(fromUrl);
-  } else {
-    render();
-  }
-  renderRecipeList();
+  if (Object.keys(fromUrl).length > 0) applyParams(fromUrl);
+  setLang(savedLang); // applica i testi e fa render + renderRecipeList
 </script>
 </body>
 </html>
