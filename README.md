@@ -19,21 +19,31 @@ Live: https://pizza-biga-calculator.netlify.app
 - **Ripristino della ricetta di default** con un tocco.
 - **Bilingue IT / EN**: selettore in alto a destra, scelta ricordata sul
   dispositivo e trasportata nei link condivisi (`?lang=en`).
-- **Ricette salvate** sul dispositivo (localStorage) con ricarica al volo.
+- **Account e ricette nel cloud**: registrazione con email e password (min 8
+  caratteri, hash scrypt); le ricette salvate seguono l'utente su ogni
+  dispositivo. Storage su Netlify Blobs, funzioni serverless in
+  `netlify/functions/`. Password dimenticata: l'amministratore esegue
+  `node tools/reset-password.mjs <email> <password-temporanea>` e l'utente
+  poi la cambia dal sito («Cambia password»).
 - **Mobile-first**: verificato su viewport iPhone (390px), Android (360px)
   e iPad (820px).
 - **Link condivisibili**: tutto lo stato del calcolatore vive nella query string.
 
 ## Sviluppo
 
-Un solo file, `index.html` — nessuna build, nessuna dipendenza.
+Front end in un solo file (`public/index.html`), backend in quattro piccole
+funzioni Netlify (`netlify/functions/`), dati su Netlify Blobs.
 
 ```sh
-node test.js    # verifica la matematica dell'impasto e il codec URL
-open index.html # prova locale
+npm install         # solo @netlify/blobs, per le funzioni
+node test.js        # matematica dell'impasto e codec URL
+node test-auth.mjs  # hash password e token di sessione
+netlify dev         # sito + funzioni in locale
 ```
 
-Il deploy è su Netlify (pubblica la root del repo, vedi `netlify.toml`).
+Il deploy è su Netlify: `netlify deploy --prod --dir public` dalla root del
+repo (pubblica `public/` e impacchetta le funzioni, vedi `netlify.toml`).
+Richiede la env var `AUTH_SECRET` (già impostata sul sito).
 
 ## Crediti
 

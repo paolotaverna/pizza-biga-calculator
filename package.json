@@ -1,0 +1,27 @@
+{
+  "name": "pizza-biga-calculator",
+  "version": "1.0.0",
+  "description": "Calcolatore interattivo e ricetta completa della mia pizza napoletana con biga, ispirata al video [«Pizza Napoletana con Biga»](https://www.youtube.com/watch?v=ZVU9D4OkviM) di Vincenzo Viscusi.",
+  "main": "test.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/paolotaverna/pizza-biga-calculator.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/paolotaverna/pizza-biga-calculator/issues"
+  },
+  "homepage": "https://github.com/paolotaverna/pizza-biga-calculator#readme",
+  "dependencies": {
+    "@netlify/blobs": "^10.7.9"
+  }
+}

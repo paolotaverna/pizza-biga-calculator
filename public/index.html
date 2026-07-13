@@ -113,7 +113,8 @@
   .field { margin-bottom: 1rem; }
   .field label { display: flex; justify-content: space-between; align-items: baseline; font-size: .85rem; font-weight: 600; margin-bottom: .35rem; }
   .field label .val { color: var(--accent); font-variant-numeric: tabular-nums; font-weight: 700; }
-  .field input[type="number"], .field input[type="text"] {
+  .field input[type="number"], .field input[type="text"],
+  .field input[type="email"], .field input[type="password"] {
     width: 100%; padding: .45rem .6rem; font-size: 1rem; font-family: inherit;
     font-variant-numeric: tabular-nums;
     border: 1px solid var(--line); border-radius: 7px; background: var(--field); color: var(--ink);
@@ -167,6 +168,14 @@
     background: var(--accent); color: var(--accent-ink); font-family: inherit; font-size: .85rem; font-weight: 600;
   }
   .saverow button:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+  .saverow .ghost { background: transparent; border: 1px solid var(--accent); color: var(--accent); }
+  .saverow .ghost:hover { background: var(--accent); color: var(--accent-ink); }
+  .linklike {
+    background: none; border: 0; padding: 0; cursor: pointer; font-family: inherit;
+    font-size: inherit; color: var(--accent); text-decoration: underline; text-underline-offset: 2px;
+  }
+  .linklike:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .empty.error { color: var(--accent); font-weight: 600; }
   ul.recipes { list-style: none; margin: 0 0 .35rem; padding: 0; }
   ul.recipes li { display: flex; align-items: center; gap: .5rem; border-top: 1px dotted var(--line); }
   ul.recipes li:first-child { border-top: 0; }
@@ -394,12 +403,37 @@
 
     <div class="panel">
       <h2 data-i18n="myRecipes">Le mie ricette</h2>
-      <div class="saverow">
-        <input type="text" id="recipeName" placeholder="Nome ricetta…" maxlength="40" aria-label="Nome della ricetta da salvare" data-i18n-placeholder="namePh">
-        <button type="button" id="saveRecipe" data-i18n="save">Salva</button>
+
+      <div id="authBox">
+        <p class="empty" data-i18n="authIntro">Per salvare le ricette e ritrovarle su ogni dispositivo serve un account gratuito.</p>
+        <div class="field"><input type="email" id="authEmail" placeholder="Email" autocomplete="email" aria-label="Email"></div>
+        <div class="field"><input type="password" id="authPass" placeholder="Password (min 8 caratteri)" data-i18n-placeholder="passPh" autocomplete="current-password" aria-label="Password"></div>
+        <div class="saverow">
+          <button type="button" id="loginBtn" data-i18n="loginBtn">Accedi</button>
+          <button type="button" id="registerBtn" class="ghost" data-i18n="registerBtn">Registrati</button>
+        </div>
+        <p class="empty error" id="authError" hidden></p>
       </div>
-      <p class="empty" id="recipesEmpty" data-i18n="noRecipes">Nessuna ricetta salvata: imposta il calcolatore e dalle un nome. Le ricette restano su questo dispositivo.</p>
-      <ul class="recipes" id="recipeList"></ul>
+
+      <div id="cloudBox" hidden>
+        <p class="empty"><span data-i18n="signedAs">Connesso come</span> <strong id="whoami"></strong> · <button type="button" class="linklike" id="logoutBtn" data-i18n="logout">Esci</button></p>
+        <div class="saverow">
+          <input type="text" id="recipeName" placeholder="Nome ricetta…" maxlength="40" aria-label="Nome della ricetta da salvare" data-i18n-placeholder="namePh">
+          <button type="button" id="saveRecipe" data-i18n="save">Salva</button>
+        </div>
+        <p class="empty" id="recipesEmpty" data-i18n="noRecipes">Nessuna ricetta salvata nel tuo account: imposta il calcolatore e dalle un nome.</p>
+        <p class="empty error" id="cloudError" hidden></p>
+        <ul class="recipes" id="recipeList"></ul>
+        <button type="button" class="linkbtn" id="importLocal" hidden></button>
+        <details class="yeast">
+          <summary data-i18n="changePw">Cambia password</summary>
+          <div class="field"><input type="password" id="pwOld" placeholder="Password attuale" data-i18n-placeholder="pwOldPh" autocomplete="current-password" aria-label="Password attuale"></div>
+          <div class="field"><input type="password" id="pwNew" placeholder="Nuova password (min 8)" data-i18n-placeholder="pwNewPh" autocomplete="new-password" aria-label="Nuova password"></div>
+          <div class="saverow"><button type="button" id="pwChangeBtn" data-i18n="pwChangeBtn">Aggiorna</button></div>
+          <p class="empty" id="pwMsg" hidden></p>
+        </details>
+      </div>
+
       <button type="button" class="linkbtn" id="copyLink" data-i18n="copyLink">Copia il link a questa ricetta</button>
     </div>
   </section>
@@ -615,7 +649,18 @@
       maltRow: 'Malto diastasico',
       totalDough: 'Impasto totale', hydr: 'Idratazione',
       myRecipes: 'Le mie ricette', namePh: 'Nome ricetta…', save: 'Salva',
-      noRecipes: 'Nessuna ricetta salvata: imposta il calcolatore e dalle un nome. Le ricette restano su questo dispositivo.',
+      noRecipes: 'Nessuna ricetta salvata nel tuo account: imposta il calcolatore e dalle un nome.',
+      authIntro: 'Per salvare le ricette e ritrovarle su ogni dispositivo serve un account gratuito.',
+      passPh: 'Password (min 8 caratteri)', loginBtn: 'Accedi', registerBtn: 'Registrati',
+      signedAs: 'Connesso come', logout: 'Esci',
+      changePw: 'Cambia password', pwOldPh: 'Password attuale', pwNewPh: 'Nuova password (min 8)',
+      pwChangeBtn: 'Aggiorna', pwDone: 'Password aggiornata ✓',
+      importLocal: 'Importa {n} ricette da questo dispositivo',
+      errCredentials: 'Email o password sbagliata.',
+      errExists: 'Esiste già un account con questa email: prova ad accedere.',
+      errEmail: 'Email non valida.',
+      errPassword: 'Password troppo corta: minimo 8 caratteri.',
+      errNetwork: 'Server non raggiungibile: le ricette cloud funzionano su pizza-biga-calculator.netlify.app',
       copyLink: 'Copia il link a questa ricetta', copied: 'Link copiato ✓',
       twoDays: 'I due giorni, in breve', stepByStep: 'La ricetta, passo passo',
       tl1: '<p class="when">Giorno 1</p><p class="what">Biga</p><p class="how">5–10 min di lavoro, a gnocchetti</p>',
@@ -667,7 +712,18 @@
       maltRow: 'Diastatic malt',
       totalDough: 'Total dough', hydr: 'Hydration',
       myRecipes: 'My recipes', namePh: 'Recipe name…', save: 'Save',
-      noRecipes: 'No saved recipes yet: set up the calculator and give it a name. Recipes stay on this device.',
+      noRecipes: 'No recipes in your account yet: set up the calculator and give it a name.',
+      authIntro: 'Saving recipes and finding them on any device requires a free account.',
+      passPh: 'Password (min 8 characters)', loginBtn: 'Sign in', registerBtn: 'Create account',
+      signedAs: 'Signed in as', logout: 'Sign out',
+      changePw: 'Change password', pwOldPh: 'Current password', pwNewPh: 'New password (min 8)',
+      pwChangeBtn: 'Update', pwDone: 'Password updated ✓',
+      importLocal: 'Import {n} recipes from this device',
+      errCredentials: 'Wrong email or password.',
+      errExists: 'An account with this email already exists: try signing in.',
+      errEmail: 'Invalid email.',
+      errPassword: 'Password too short: at least 8 characters.',
+      errNetwork: 'Server unreachable: cloud recipes work on pizza-biga-calculator.netlify.app',
       copyLink: 'Copy the link to this recipe', copied: 'Link copied ✓',
       twoDays: 'The two days at a glance', stepByStep: 'The recipe, step by step',
       tl1: '<p class="when">Day 1</p><p class="what">Biga</p><p class="how">5–10 min of work, into lumps</p>',
@@ -739,7 +795,7 @@
       if (v != null) el.placeholder = v;
     });
     render();
-    renderRecipeList();
+    updateAuthUI(); // aggiorna anche i testi dinamici del pannello account
   }
 
   function readParams() {
@@ -838,17 +894,127 @@
     onInput();
   }
 
-  // ---------- Ricette salvate (localStorage) ----------
-  function loadRecipes() {
+  // ---------- Ricette nel cloud (account) ----------
+  // Le ricette locali (STORE_KEY) restano solo come sorgente per l'import.
+  var AUTH_KEY = 'pizzaBigaAuth';
+  var auth = null;          // {token, email}
+  var cloudRecipes = [];    // lista dell'account, tenuta in memoria
+
+  try { auth = JSON.parse(localStorage.getItem(AUTH_KEY)); } catch (e) { auth = null; }
+  if (auth && (typeof auth.token !== 'string' || typeof auth.email !== 'string')) auth = null;
+
+  function loadLocalRecipes() {
     try {
       var raw = localStorage.getItem(STORE_KEY);
       var list = raw ? JSON.parse(raw) : [];
       return Array.isArray(list) ? list : [];
     } catch (e) { return []; }
   }
-  function saveRecipes(list) {
-    try { localStorage.setItem(STORE_KEY, JSON.stringify(list)); } catch (e) { /* storage pieno o negato */ }
+
+  function api(path, method, body) {
+    var headers = { 'content-type': 'application/json' };
+    if (auth) headers.authorization = 'Bearer ' + auth.token;
+    return fetch('/api/' + path, {
+      method: method, headers: headers,
+      body: body ? JSON.stringify(body) : undefined
+    }).then(function (res) {
+      return res.json().catch(function () { return {}; }).then(function (data) {
+        return { status: res.status, data: data };
+      });
+    });
   }
+
+  function apiErrorKey(r) {
+    if (r.status === 401) return 'errCredentials';
+    if (r.status === 409) return 'errExists';
+    if (r.data && r.data.error === 'email') return 'errEmail';
+    if (r.data && r.data.error === 'password') return 'errPassword';
+    return 'errNetwork';
+  }
+
+  function showMsg(id, key) {
+    var el = $(id);
+    el.hidden = !key;
+    if (key) el.textContent = t(key);
+  }
+
+  function setAuth(a) {
+    auth = a;
+    try {
+      if (a) localStorage.setItem(AUTH_KEY, JSON.stringify(a));
+      else localStorage.removeItem(AUTH_KEY);
+    } catch (e) { /* storage negato */ }
+    updateAuthUI();
+  }
+
+  function updateAuthUI() {
+    $('authBox').hidden = !!auth;
+    $('cloudBox').hidden = !auth;
+    showMsg('authError', null);
+    showMsg('cloudError', null);
+    if (auth) {
+      $('whoami').textContent = auth.email;
+      var locals = loadLocalRecipes();
+      $('importLocal').hidden = locals.length === 0;
+      if (locals.length) $('importLocal').textContent = t('importLocal').replace('{n}', locals.length);
+    }
+    renderRecipeList();
+  }
+
+  function loadCloud() {
+    if (!auth) return;
+    api('recipes', 'GET').then(function (r) {
+      if (r.status === 200) { cloudRecipes = r.data.recipes || []; renderRecipeList(); }
+      else if (r.status === 401) { setAuth(null); }
+      else showMsg('cloudError', 'errNetwork');
+    }).catch(function () { showMsg('cloudError', 'errNetwork'); });
+  }
+
+  function pushCloud() {
+    return api('recipes', 'PUT', { recipes: cloudRecipes }).then(function (r) {
+      if (r.status === 200) { cloudRecipes = r.data.recipes; renderRecipeList(); }
+      else if (r.status === 401) { setAuth(null); }
+      else showMsg('cloudError', 'errNetwork');
+    }).catch(function () { showMsg('cloudError', 'errNetwork'); });
+  }
+
+  function authSubmit(path) {
+    var email = $('authEmail').value.trim();
+    var pass = $('authPass').value;
+    showMsg('authError', null);
+    api(path, 'POST', { email: email, password: pass }).then(function (r) {
+      if (r.status === 200 || r.status === 201) {
+        $('authPass').value = '';
+        setAuth({ token: r.data.token, email: r.data.email });
+        loadCloud();
+      } else showMsg('authError', apiErrorKey(r));
+    }).catch(function () { showMsg('authError', 'errNetwork'); });
+  }
+
+  $('loginBtn').addEventListener('click', function () { authSubmit('login'); });
+  $('registerBtn').addEventListener('click', function () { authSubmit('register'); });
+  $('authPass').addEventListener('keydown', function (e) { if (e.key === 'Enter') authSubmit('login'); });
+  $('logoutBtn').addEventListener('click', function () { cloudRecipes = []; setAuth(null); });
+
+  $('importLocal').addEventListener('click', function () {
+    var locals = loadLocalRecipes();
+    locals.forEach(function (rec) {
+      if (!cloudRecipes.some(function (r) { return r.name === rec.name; })) cloudRecipes.unshift(rec);
+    });
+    pushCloud().then(function () {
+      try { localStorage.removeItem(STORE_KEY); } catch (e) { /* ok */ }
+      $('importLocal').hidden = true;
+    });
+  });
+
+  $('pwChangeBtn').addEventListener('click', function () {
+    showMsg('pwMsg', null);
+    api('password', 'POST', { oldPassword: $('pwOld').value, newPassword: $('pwNew').value })
+      .then(function (r) {
+        if (r.status === 200) { $('pwOld').value = ''; $('pwNew').value = ''; showMsg('pwMsg', 'pwDone'); }
+        else showMsg('pwMsg', apiErrorKey(r));
+      }).catch(function () { showMsg('pwMsg', 'errNetwork'); });
+  });
 
   function recipeSummary(p) {
     return p.n + '×' + Math.round(p.peso) + ' g · ' + p.idr + '% · biga ' + p.bigaPct + '%' +
@@ -858,10 +1024,10 @@
   }
 
   function renderRecipeList() {
-    var list = loadRecipes();
+    var list = auth ? cloudRecipes : [];
     var ul = $('recipeList');
     ul.textContent = '';
-    $('recipesEmpty').hidden = list.length > 0;
+    $('recipesEmpty').hidden = !auth || list.length > 0;
     list.forEach(function (rec) {
       var li = document.createElement('li');
       var load = document.createElement('button');
@@ -886,8 +1052,9 @@
       del.textContent = '×';
       del.setAttribute('aria-label', t('delAria') + ' «' + rec.name + '»');
       del.addEventListener('click', function () {
-        saveRecipes(loadRecipes().filter(function (r) { return r.name !== rec.name; }));
+        cloudRecipes = cloudRecipes.filter(function (r) { return r.name !== rec.name; });
         renderRecipeList();
+        pushCloud();
       });
       li.appendChild(load);
       li.appendChild(del);
@@ -896,15 +1063,15 @@
   }
 
   $('saveRecipe').addEventListener('click', function () {
+    if (!auth) return;
     var name = $('recipeName').value.trim();
-    var list = loadRecipes();
-    if (!name) name = t('recipeDefault') + (list.length + 1);
+    if (!name) name = t('recipeDefault') + (cloudRecipes.length + 1);
     var rec = { name: name, params: readParams(), savedAt: new Date().toISOString() };
-    var idx = list.findIndex(function (r) { return r.name === name; });
-    if (idx >= 0) list[idx] = rec; else list.unshift(rec);
-    saveRecipes(list);
+    var idx = cloudRecipes.findIndex(function (r) { return r.name === name; });
+    if (idx >= 0) cloudRecipes[idx] = rec; else cloudRecipes.unshift(rec);
     $('recipeName').value = name;
     renderRecipeList();
+    pushCloud();
   });
 
   // ---------- Copia link ----------
@@ -957,6 +1124,8 @@
   var fromUrl = queryToParams(location.search);
   if (Object.keys(fromUrl).length > 0) applyParams(fromUrl);
   setLang(savedLang); // applica i testi e fa render + renderRecipeList
+  updateAuthUI();
+  loadCloud();
 </script>
 </body>
 </html>

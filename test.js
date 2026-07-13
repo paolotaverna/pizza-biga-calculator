@@ -4,7 +4,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const html = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
+const html = fs.readFileSync(path.join(__dirname, 'public', 'index.html'), 'utf8');
 function block(name) {
   const m = html.match(new RegExp(`// === ${name} START ===([\\s\\S]*?)// === ${name} END ===`));
   if (!m) { console.error(`blocco ${name} non trovato in index.html`); process.exit(1); }
