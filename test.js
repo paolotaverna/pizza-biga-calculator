@@ -21,7 +21,7 @@ function eq(name, got, want, tol = 0.001) {
   else console.log('ok  ', name);
 }
 
-// Base: la ricetta di default (valori del video sorgente). Con n×peso = 1730 g
+// Base: la ricetta di default. Con n×peso = 1730 g
 // la farina totale deve tornare esattamente a 1000 g.
 const base = { n: 1, peso: 1730, idr: 70, bigaPct: 50, saleGkg: 20, olioGkg: 0, lievBigaPct: 1, lievChiusuraPct: 0.5, secco: false, germe: false, malto: false, maltoGkg: 5 };
 

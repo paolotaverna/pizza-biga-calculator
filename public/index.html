@@ -288,8 +288,7 @@
   <header class="masthead">
     <p class="eyebrow" data-i18n="eyebrow">Il calcolatore di Paolo Taverna</p>
     <h1 data-i18n="h1">Pizza Napoletana <em>con Biga</em></h1>
-    <p class="sub" data-i18n="sub">Calcolatore e ricetta completa della mia pizza con biga — ispirata al
-      <a href="https://www.youtube.com/watch?v=ZVU9D4OkviM" target="_blank" rel="noopener">video di Vincenzo Viscusi</a>.
+    <p class="sub" data-i18n="sub">Calcolatore e ricetta completa della mia pizza con biga.
       Biga al 50% di idratazione, impasto finale al 70%, acqua e tempi adattati alle temperature di casa tua.</p>
   </header>
 
@@ -371,7 +370,7 @@
       <div class="extras">
         <div class="chkline">
           <input type="checkbox" id="germe">
-          <label for="germe" data-i18n="germLabel">Germe di grano<span class="chknote">5 g/kg in chiusura · omaggio al maestro Susta</span></label>
+          <label for="germe" data-i18n="germLabel">Germe di grano<span class="chknote">5 g/kg in chiusura</span></label>
         </div>
         <div class="chkline">
           <input type="checkbox" id="malto">
@@ -381,7 +380,7 @@
         <p class="hint" id="maltoForced" hidden data-i18n="maltForced">Con più dell'80% di farina in biga il malto è obbligatorio: senza, in chiusura l'impasto non ha abbastanza zuccheri freschi da fermentare.</p>
       </div>
 
-      <button type="button" class="preset" id="presetVideo" data-i18n="resetBtn">↩ Ripristina la ricetta di default</button>
+      <button type="button" class="preset" id="presetDefault" data-i18n="resetBtn">↩ Ripristina la ricetta di default</button>
     </div>
 
     <div class="results" aria-live="polite">
@@ -401,7 +400,7 @@
           <div class="row"><span class="what" data-i18n="coldWater2">Acqua <span class="note" id="wNote">~17 °C</span></span><span class="dots"></span><span class="qty" id="rChiAcqua">450 g</span></div>
           <div class="row"><span class="what" data-i18n="salt">Sale</span><span class="dots"></span><span class="qty" id="rSale">20 g</span></div>
           <div class="row"><span class="what"><span data-i18n="yeast2">Lievito</span> <span class="note" id="rChiLievNote">fresco</span></span><span class="dots"></span><span class="qty" id="rChiLiev">5 g</span></div>
-          <div class="row" id="rGermeRow" hidden><span class="what" data-i18n="germRow">Germe di grano <span class="note">maestro Susta</span></span><span class="dots"></span><span class="qty" id="rGerme">5 g</span></div>
+          <div class="row" id="rGermeRow" hidden><span class="what" data-i18n="germRow">Germe di grano</span><span class="dots"></span><span class="qty" id="rGerme">5 g</span></div>
           <div class="row" id="rMaltoRow" hidden><span class="what" data-i18n="maltRow">Malto diastasico</span><span class="dots"></span><span class="qty" id="rMalto">5 g</span></div>
           <div class="row" id="rOlioRow" hidden><span class="what" data-i18n="oilRow">Olio</span><span class="dots"></span><span class="qty" id="rOlio">0 g</span></div>
         </div>
@@ -481,7 +480,7 @@
       <div data-i18n="step1">
         <h3>Giorno 1 — Prepara la biga</h3>
         <p>Sciogli il lievito nell'acqua <strong>fredda di frigo</strong> (l'acqua fredda elimina la variabile temperatura: così il risultato è riproducibile per tutti). Metti tutta la farina in una cassettina per impasto — più spaziosa, più comoda — e versaci l'acqua.</p>
-        <p>Lavora con una forchetta (o agita la cassetta chiusa, il metodo "no stress" di Roberto Susta): l'acqua entra in contatto con la farina e si formano gli <strong>gnocchetti</strong>. Quando tutta l'acqua libera è stata catturata, raggruppa gli gnocchetti. È tutto: un preimpasto grezzo, con poco glutine ma glutine c'è.</p>
+        <p>Lavora con una forchetta (o agita la cassetta chiusa, il metodo "no stress"): l'acqua entra in contatto con la farina e si formano gli <strong>gnocchetti</strong>. Quando tutta l'acqua libera è stata catturata, raggruppa gli gnocchetti. È tutto: un preimpasto grezzo, con poco glutine ma glutine c'è.</p>
         <p class="tip">I nemici sono i residui di farina asciutta: nell'impasto finale formano grumi. Meglio lavorare la biga qualche secondo in più per raccoglierli — fermenterà un filo più veloce, ma in frigo resta tutto sotto controllo.</p>
       </div>
     </div>
@@ -526,7 +525,7 @@
   </section>
 
   <aside class="fiocco" data-i18n="fiocco">
-    <p class="day">Bonus · omaggio al maestro Susta</p>
+    <p class="day">Bonus</p>
     <h2>La pizza "fiocco"</h2>
     <p>Niente margherita: una farcitura dai «sapori semplici però molto goderecci» — da gattò di patate. Non è una pizza leggerissima, e va benissimo così.</p>
     <ol>
@@ -540,7 +539,7 @@
   </aside>
 
   <footer class="colophon">
-    <p data-i18n="footer">La ricetta di Paolo Taverna, ispirata al video <a href="https://www.youtube.com/watch?v=ZVU9D4OkviM" target="_blank" rel="noopener">«Pizza Napoletana con Biga»</a> di Vincenzo Viscusi. Lievito secco = metà dose del fresco.</p>
+    <p data-i18n="footer">La ricetta di Paolo Taverna. Lievito secco = metà dose del fresco.</p>
   </footer>
 </div>
 
@@ -666,7 +665,7 @@
       docTitle: 'Pizza Napoletana con Biga — Calcolatore',
       eyebrow: 'Il calcolatore di Paolo Taverna',
       h1: 'Pizza Napoletana <em>con Biga</em>',
-      sub: 'Calcolatore e ricetta completa della mia pizza con biga — ispirata al <a href="https://www.youtube.com/watch?v=ZVU9D4OkviM" target="_blank" rel="noopener">video di Vincenzo Viscusi</a>. Biga al 50% di idratazione, impasto finale al 70%, acqua e tempi adattati alle temperature di casa tua.',
+      sub: 'Calcolatore e ricetta completa della mia pizza con biga. Biga al 50% di idratazione, impasto finale al 70%, acqua e tempi adattati alle temperature di casa tua.',
       yourBatch: 'Il tuo lotto',
       balls: 'Panetti', weight: 'Peso (g)',
       totalHydr: 'Idratazione totale', flourInBiga: 'Farina in biga',
@@ -677,7 +676,7 @@
       freshBtn: 'Fresco', dryBtn: 'Secco (½ dose)',
       yeastTuning: 'Regolazioni lievito',
       yeastInBiga: 'In biga (% farina biga)', yeastAtMix: 'In chiusura (% farina tot.)',
-      germLabel: 'Germe di grano<span class="chknote">5 g/kg in chiusura · omaggio al maestro Susta</span>',
+      germLabel: 'Germe di grano<span class="chknote">5 g/kg in chiusura</span>',
       maltLabel: 'Malto diastasico<span class="chknote">in chiusura, g per kg di farina</span>',
       maltForced: "Con più dell'80% di farina in biga il malto è obbligatorio: senza, in chiusura l'impasto non ha abbastanza zuccheri freschi da fermentare.",
       resetBtn: '↩ Ripristina la ricetta di default',
@@ -697,7 +696,7 @@
       allBiga: 'Tutta la biga',
       weakFlour: 'Farina <span class="note">anche debole, W ~290</span>',
       salt: 'Sale',
-      germRow: 'Germe di grano <span class="note">maestro Susta</span>',
+      germRow: 'Germe di grano',
       maltRow: 'Malto diastasico',
       totalDough: 'Impasto totale', hydr: 'Idratazione',
       myRecipes: 'Le mie ricette', namePh: 'Nome ricetta…', save: 'Salva',
@@ -722,13 +721,13 @@
       tl5: '<p class="when">+ 10 min</p><p class="what">Riposo, poi staglio</p><p class="how">panetti in contenitori unti</p>',
       tl6: '<p class="when">1½–5 h</p><p class="what">Appretto a T.A.</p><p class="how">secondo il programma · test del dito</p>',
       tl7: '<p class="when">~90 sec</p><p class="what">Cottura</p><p class="how">460° sopra / 420° sotto</p>',
-      step1: '<h3>Giorno 1 — Prepara la biga</h3><p>Sciogli il lievito nell\'acqua <strong>fredda di frigo</strong> (l\'acqua fredda elimina la variabile temperatura: così il risultato è riproducibile per tutti). Metti tutta la farina in una cassettina per impasto — più spaziosa, più comoda — e versaci l\'acqua.</p><p>Lavora con una forchetta (o agita la cassetta chiusa, il metodo "no stress" di Roberto Susta): l\'acqua entra in contatto con la farina e si formano gli <strong>gnocchetti</strong>. Quando tutta l\'acqua libera è stata catturata, raggruppa gli gnocchetti. È tutto: un preimpasto grezzo, con poco glutine ma glutine c\'è.</p><p class="tip">I nemici sono i residui di farina asciutta: nell\'impasto finale formano grumi. Meglio lavorare la biga qualche secondo in più per raccoglierli — fermenterà un filo più veloce, ma in frigo resta tutto sotto controllo.</p>',
+      step1: '<h3>Giorno 1 — Prepara la biga</h3><p>Sciogli il lievito nell\'acqua <strong>fredda di frigo</strong> (l\'acqua fredda elimina la variabile temperatura: così il risultato è riproducibile per tutti). Metti tutta la farina in una cassettina per impasto — più spaziosa, più comoda — e versaci l\'acqua.</p><p>Lavora con una forchetta (o agita la cassetta chiusa, il metodo "no stress"): l\'acqua entra in contatto con la farina e si formano gli <strong>gnocchetti</strong>. Quando tutta l\'acqua libera è stata catturata, raggruppa gli gnocchetti. È tutto: un preimpasto grezzo, con poco glutine ma glutine c\'è.</p><p class="tip">I nemici sono i residui di farina asciutta: nell\'impasto finale formano grumi. Meglio lavorare la biga qualche secondo in più per raccoglierli — fermenterà un filo più veloce, ma in frigo resta tutto sotto controllo.</p>',
       step2: '<h3>Riposo e frigo</h3><p>Metti la biga in un contenitore e lasciala a temperatura ambiente per il tempo indicato dal <strong>programma</strong> (sveglia il lievito prima del freddo), poi appoggia sopra un <strong>panno umido</strong> (evita che la superficie si secchi in frigo) e trasferisci in frigorifero per le ore indicate.</p><p>Il giorno dopo, <strong>tira fuori la biga in anticipo</strong> — il programma dice quante ore — spezzata a pezzi in un contenitore largo: recupera la maturazione rallentata dal freddo e perde il gelo. Biga e acqua gelide in impastatrice sono la strada per un impasto tenace, difficile da stendere. La biga pronta è leggermente lievitata, spugnosa, piena di microbollicine: è giusta così.</p>',
       step3: '<h3>Giorno 2 — Chiudi l\'impasto</h3><p>Metti la biga nell\'impastatrice con la seconda farina (qui basta una farina più debole, anche da supermercato: la forza l\'ha già messa la biga). Aggiungi il lievito, una buona parte dell\'acqua <strong>alla temperatura del programma</strong> e <strong>subito il sale</strong>, così non lo dimentichi. Aggiungi il resto dell\'acqua man mano che viene assorbita.</p><p>Partendo da un preimpasto la "zucca" si forma in fretta: servono <strong>12–15 minuti</strong>. L\'impasto è pronto quando si stacca dalla vasca e inizia a "scoppiettare". Temperatura finale target: tra <strong>23 °C e 25 °C</strong>, misurata con un termometro a sonda.</p><p class="tip">Appena chiuso, l\'impasto ha già il rapporto perfetto tra tenacità ed estensibilità: è il grande vantaggio pratico della biga.</p>',
       step4: '<h3>Staglio e appretto</h3><p>Lascia rilassare l\'impasto <strong>~10 minuti</strong> (stagliarlo subito rovinerebbe la maglia glutinica, stressata dall\'impastamento). Poi forma i panetti — <strong>250–270 g</strong> per una pizza da piatto di 30–33 cm — con pochi movimenti, chiusura sul tavolo, senza stressare la pasta.</p><p>Sistemali in contenitori unti con un velo di <strong>olio di semi</strong> (quello d\'oliva è sprecato; in ogni caso non abbondare, o la semola si incolla al bordo in stesura). Due strade: <strong>appretto a temperatura ambiente per le ore del programma</strong> e si inforna, oppure in frigo per arrivare comodi anche a <strong>5–6 ore</strong>.</p><p class="tip">Per una stesura più facile, mezz\'ora prima di infornare puoi mettere i panetti in frigo: pasta più fresca, più semplice da stendere.</p>',
       step5: '<h3>Stesura e cottura</h3><p>Il panetto sarà carico d\'aria, morbido, e seguirà le mani senza tornare indietro. Stendi sulla semola, allarga, poi completa sulla pala.</p><p>La cottura ideale è in fornetto elettrico (es. F1 Gara Evolution, programma "pizza contemporanea"): <strong>460 °C sopra, 420 °C sotto</strong>, circa <strong>un minuto e mezzo</strong> con una girata a metà. Cornicione gonfio, sfogliato e asciutto, mollica strutturata, colore pieno ovunque.</p>',
-      fiocco: '<p class="day">Bonus · omaggio al maestro Susta</p><h2>La pizza "fiocco"</h2><p>Niente margherita: una farcitura dai «sapori semplici però molto goderecci» — da gattò di patate. Non è una pizza leggerissima, e va benissimo così.</p><ol><li><strong>Panna</strong> alla base</li><li><strong>Prosciutto cotto</strong> sfilacciato</li><li><strong>Mozzarella</strong>, non troppa</li><li><strong>Patata lessa schiacciata</strong>, in abbondanza</li><li><strong>Formaggio</strong>, tanto</li><li>Un giro d\'<strong>olio</strong> e <strong>pepe nero</strong></li></ol>',
-      footer: 'La ricetta di Paolo Taverna, ispirata al video <a href="https://www.youtube.com/watch?v=ZVU9D4OkviM" target="_blank" rel="noopener">«Pizza Napoletana con Biga»</a> di Vincenzo Viscusi. Lievito secco = metà dose del fresco.',
+      fiocco: '<p class="day">Bonus</p><h2>La pizza "fiocco"</h2><p>Niente margherita: una farcitura dai «sapori semplici però molto goderecci» — da gattò di patate. Non è una pizza leggerissima, e va benissimo così.</p><ol><li><strong>Panna</strong> alla base</li><li><strong>Prosciutto cotto</strong> sfilacciato</li><li><strong>Mozzarella</strong>, non troppa</li><li><strong>Patata lessa schiacciata</strong>, in abbondanza</li><li><strong>Formaggio</strong>, tanto</li><li>Un giro d\'<strong>olio</strong> e <strong>pepe nero</strong></li></ol>',
+      footer: 'La ricetta di Paolo Taverna. Lievito secco = metà dose del fresco.',
       noteFresh: 'fresco', noteDry: 'secco', ballsOf: ' panetti da ',
       sumFresh: 'liev. fresco', sumDry: 'liev. secco', sumGerme: 'germe', sumMalto: 'malto',
       loadTitle: 'Carica questa ricetta', delAria: 'Elimina', recipeDefault: 'Ricetta '
@@ -737,7 +736,7 @@
       docTitle: 'Neapolitan Pizza with Biga — Calculator',
       eyebrow: "Paolo Taverna's calculator",
       h1: 'Neapolitan Pizza <em>with Biga</em>',
-      sub: 'Calculator and complete recipe for my biga pizza — inspired by <a href="https://www.youtube.com/watch?v=ZVU9D4OkviM" target="_blank" rel="noopener">Vincenzo Viscusi\'s video</a>. Biga at 50% hydration, final dough at 70%, water and times tuned to your home temperatures.',
+      sub: 'Calculator and complete recipe for my biga pizza. Biga at 50% hydration, final dough at 70%, water and times tuned to your home temperatures.',
       yourBatch: 'Your batch',
       balls: 'Dough balls', weight: 'Weight (g)',
       totalHydr: 'Total hydration', flourInBiga: 'Flour in the biga',
@@ -748,7 +747,7 @@
       freshBtn: 'Fresh', dryBtn: 'Dry (½ dose)',
       yeastTuning: 'Yeast fine-tuning',
       yeastInBiga: 'In the biga (% of biga flour)', yeastAtMix: 'At final mix (% of total flour)',
-      germLabel: 'Wheat germ<span class="chknote">5 g/kg at final mix · tribute to maestro Susta</span>',
+      germLabel: 'Wheat germ<span class="chknote">5 g/kg at final mix</span>',
       maltLabel: 'Diastatic malt<span class="chknote">at final mix, g per kg of flour</span>',
       maltForced: 'With more than 80% of the flour in the biga, malt is mandatory: without it, at the final mix the dough has no fresh sugars left to ferment.',
       resetBtn: '↩ Reset to the default recipe',
@@ -768,7 +767,7 @@
       allBiga: 'All the biga',
       weakFlour: 'Flour <span class="note">weaker is fine, W ~290</span>',
       salt: 'Salt',
-      germRow: 'Wheat germ <span class="note">maestro Susta</span>',
+      germRow: 'Wheat germ',
       maltRow: 'Diastatic malt',
       totalDough: 'Total dough', hydr: 'Hydration',
       myRecipes: 'My recipes', namePh: 'Recipe name…', save: 'Save',
@@ -793,13 +792,13 @@
       tl5: '<p class="when">+ 10 min</p><p class="what">Rest, then divide</p><p class="how">balls into oiled containers</p>',
       tl6: '<p class="when">1½–5 h</p><p class="what">Proof at room temp</p><p class="how">per the schedule · poke test</p>',
       tl7: '<p class="when">~90 sec</p><p class="what">Bake</p><p class="how">460° top / 420° bottom</p>',
-      step1: '<h3>Day 1 — Make the biga</h3><p>Dissolve the yeast in <strong>fridge-cold water</strong> (cold water removes temperature as a variable, so the result is reproducible for everyone). Put all the flour in a dough box — roomier, easier to work in — and pour in the water.</p><p>Work it with a fork (or shake the closed box — Roberto Susta\'s "no stress" method): as the water meets the flour, little lumps — the <strong>gnocchetti</strong> — form. Once all the free water has been captured, gather the lumps together. That\'s it: a rough pre-dough, with little gluten, but the gluten is there.</p><p class="tip">The enemy is leftover dry flour: in the final dough it turns into clumps. Better to work the biga a few extra seconds to pick it all up — it will ferment slightly faster, but in the fridge everything stays under control.</p>',
+      step1: '<h3>Day 1 — Make the biga</h3><p>Dissolve the yeast in <strong>fridge-cold water</strong> (cold water removes temperature as a variable, so the result is reproducible for everyone). Put all the flour in a dough box — roomier, easier to work in — and pour in the water.</p><p>Work it with a fork (or shake the closed box — the "no stress" method): as the water meets the flour, little lumps — the <strong>gnocchetti</strong> — form. Once all the free water has been captured, gather the lumps together. That\'s it: a rough pre-dough, with little gluten, but the gluten is there.</p><p class="tip">The enemy is leftover dry flour: in the final dough it turns into clumps. Better to work the biga a few extra seconds to pick it all up — it will ferment slightly faster, but in the fridge everything stays under control.</p>',
       step2: '<h3>Rest and fridge</h3><p>Put the biga in a container and leave it at room temperature for the time shown by the <strong>schedule</strong> (it wakes the yeast up before the cold), then lay a <strong>damp cloth</strong> on top (it keeps the surface from drying out in the fridge) and move it to the refrigerator for the hours shown.</p><p>The next day, <strong>take the biga out ahead of time</strong> — the schedule says how many hours — broken into chunks in a wide container: it catches up on the maturation the cold slowed down and loses its chill. Ice-cold biga and water in the mixer are the road to a tense dough that fights you when you stretch. The ready biga is slightly risen, spongy, full of tiny bubbles: exactly right.</p>',
       step3: '<h3>Day 2 — Mix the final dough</h3><p>Put the biga in the mixer with the second flour (a weaker one is fine here, even supermarket flour: the strength already came from the biga). Add the yeast, a good part of the water <strong>at the temperature from the schedule</strong> and <strong>the salt right away</strong>, so you don\'t forget it. Add the rest of the water as it gets absorbed.</p><p>Starting from a pre-dough, the dough comes together fast: it takes <strong>12–15 minutes</strong>. It\'s ready when it pulls away from the bowl and starts to "crackle". Target final temperature: between <strong>23 °C and 25 °C</strong>, measured with a probe thermometer.</p><p class="tip">Freshly mixed, the dough already has the perfect balance of strength and extensibility: that\'s the biga\'s great practical advantage.</p>',
       step4: '<h3>Dividing and final proof</h3><p>Let the dough relax <strong>~10 minutes</strong> (dividing it right away would damage the gluten network, stressed by mixing). Then shape the balls — <strong>250–270 g</strong> for a 30–33 cm plate pizza — with few movements, sealing on the bench, without stressing the dough.</p><p>Place them in containers greased with a thin film of <strong>seed oil</strong> (olive oil is wasted here; either way don\'t overdo it, or the semolina will stick to the rim while stretching). Two options: <strong>room-temperature proof for the hours in the schedule</strong> and you bake, or into the fridge to comfortably reach <strong>5–6 hours</strong>.</p><p class="tip">For easier stretching, put the balls in the fridge half an hour before baking: cooler dough is simpler to open.</p>',
       step5: '<h3>Stretching and baking</h3><p>The ball will be full of air, soft, and it will follow your hands without springing back. Stretch it on semolina, widen it, then finish on the peel.</p><p>The ideal bake is in an electric pizza oven (e.g. F1 Gara Evolution, "contemporary pizza" program): <strong>460 °C top, 420 °C bottom</strong>, about <strong>a minute and a half</strong> with one turn halfway. Puffed, flaky, dry cornicione, structured crumb, full colour everywhere.</p>',
-      fiocco: '<p class="day">Bonus · tribute to maestro Susta</p><h2>The "fiocco" pizza</h2><p>No margherita: a topping of «simple but very indulgent flavours» — potato-gattò territory. Not a light pizza, and that\'s perfectly fine.</p><ol><li><strong>Cream</strong> as the base</li><li><strong>Cooked ham</strong> (prosciutto cotto), shredded</li><li><strong>Mozzarella</strong>, not too much</li><li><strong>Crushed boiled potato</strong>, plenty</li><li><strong>Cheese</strong>, plenty</li><li>A drizzle of <strong>oil</strong> and <strong>black pepper</strong></li></ol>',
-      footer: 'Paolo Taverna\'s recipe, inspired by the video <a href="https://www.youtube.com/watch?v=ZVU9D4OkviM" target="_blank" rel="noopener">«Pizza Napoletana con Biga»</a> by Vincenzo Viscusi. Dry yeast = half the fresh dose.',
+      fiocco: '<p class="day">Bonus</p><h2>The "fiocco" pizza</h2><p>No margherita: a topping of «simple but very indulgent flavours» — potato-gattò territory. Not a light pizza, and that\'s perfectly fine.</p><ol><li><strong>Cream</strong> as the base</li><li><strong>Cooked ham</strong> (prosciutto cotto), shredded</li><li><strong>Mozzarella</strong>, not too much</li><li><strong>Crushed boiled potato</strong>, plenty</li><li><strong>Cheese</strong>, plenty</li><li>A drizzle of <strong>oil</strong> and <strong>black pepper</strong></li></ol>',
+      footer: 'Paolo Taverna\'s recipe. Dry yeast = half the fresh dose.',
       noteFresh: 'fresh', noteDry: 'dry', ballsOf: ' balls of ',
       sumFresh: 'fresh yeast', sumDry: 'dry yeast', sumGerme: 'germ', sumMalto: 'malt',
       loadTitle: 'Load this recipe', delAria: 'Delete', recipeDefault: 'Recipe '
@@ -1182,7 +1181,7 @@
     });
   });
 
-  $('presetVideo').addEventListener('click', function () {
+  $('presetDefault').addEventListener('click', function () {
     applyParams({
       n: 6, peso: 270, idr: 70, bigaPct: 50, saleGkg: 20, olioGkg: 0,
       lievBigaPct: 1, lievChiusuraPct: 0.5, secco: false,
