@@ -10,8 +10,8 @@ function block(name) {
   if (!m) { console.error(`blocco ${name} non trovato in index.html`); process.exit(1); }
   return m[1];
 }
-const { calcDough, paramsToQuery, queryToParams } = new Function(
-  block('CALC') + block('CODEC') + '; return { calcDough, paramsToQuery, queryToParams };'
+const { calcDough, calcSchedule, paramsToQuery, queryToParams } = new Function(
+  block('CALC') + block('CODEC') + '; return { calcDough, calcSchedule, paramsToQuery, queryToParams };'
 )();
 
 let fails = 0;
@@ -69,15 +69,41 @@ eq('malto = 5 g/kg', r.malto, 5);
 eq('biga 100%: farina chiusura = 0', r.chiFarina, 0);
 eq('biga 100%: acqua chiusura = 200', r.chiAcqua, 200);
 
+// --- SCHEDULE: programma alle temperature di default (21 °C casa, 4 °C frigo) ---
+let s = calcSchedule({ tAmb: 21, tFrigo: 4 }, calcDough(base));
+eq('sched riposo TA = 65 min', s.restMin, 65);
+eq('sched frigo = 20 h', s.fridgeH, 20);
+eq('sched fuori dal frigo = 3 h', s.pullOutH, 3);
+eq('sched acqua = 17 °C', s.waterC, 17);
+eq('sched appretto = 3 h', s.apprettoH, 3);
+
+// --- SCHEDULE: cucina calda -> riposo e appretto corti, acqua quasi di frigo ---
+s = calcSchedule({ tAmb: 28, tFrigo: 4 }, calcDough(base));
+eq('caldo: riposo = 30 min', s.restMin, 30);
+eq('caldo: appretto = 1.5 h', s.apprettoH, 1.5);
+eq('caldo: acqua clampata a 5 °C', s.waterC, 5);
+
+// --- SCHEDULE: casa fredda e frigo gelido -> clamp verso l'alto ---
+s = calcSchedule({ tAmb: 15, tFrigo: 1 }, calcDough(base));
+eq('freddo: riposo = 90 min', s.restMin, 90);
+eq('freddo: frigo = 24 h', s.fridgeH, 24);
+eq('freddo: fuori dal frigo = 4 h', s.pullOutH, 4);
+
+// --- SCHEDULE: senza tAmb/tFrigo usa i default 21/4 ---
+s = calcSchedule({}, calcDough(base));
+eq('sched default = come 21/4', s.waterC, 17);
+
 // --- CODEC: round-trip completo ---
-const p1 = { n: 4, peso: 260, idr: 68, bigaPct: 85, saleGkg: 22.5, olioGkg: 12.5, lievBigaPct: 1.2, lievChiusuraPct: 0.3, secco: true, germe: true, malto: true, maltoGkg: 8 };
+const p1 = { n: 4, peso: 260, idr: 68, bigaPct: 85, saleGkg: 22.5, olioGkg: 12.5, lievBigaPct: 1.2, lievChiusuraPct: 0.3, secco: true, germe: true, malto: true, maltoGkg: 8, tAmb: 25, tFrigo: 6 };
 const back = queryToParams(paramsToQuery(p1));
 for (const k of Object.keys(p1)) {
   eq(`codec round-trip ${k}`, back[k], p1[k], 0.01);
 }
 
 // --- CODEC: valori fuori range vengono clampati ---
-let c = queryToParams('idr=200&biga=30&n=999&mg=99&olio=999&liev=s&germe=1&malto=0');
+let c = queryToParams('idr=200&biga=30&n=999&mg=99&olio=999&ta=99&tf=0&liev=s&germe=1&malto=0');
+eq('clamp ta 99 -> 35', c.tAmb, 35);
+eq('clamp tf 0 -> 1', c.tFrigo, 1);
 eq('clamp idr 200 -> 90', c.idr, 90);
 eq('clamp olio 999 -> 50', c.olioGkg, 50);
 eq('clamp biga 30 -> 45', c.bigaPct, 45);
