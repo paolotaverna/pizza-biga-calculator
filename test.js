@@ -10,8 +10,8 @@ function block(name) {
   if (!m) { console.error(`blocco ${name} non trovato in index.html`); process.exit(1); }
   return m[1];
 }
-const { calcDough, calcSchedule, paramsToQuery, queryToParams } = new Function(
-  block('CALC') + block('CODEC') + '; return { calcDough, calcSchedule, paramsToQuery, queryToParams };'
+const { calcDough, calcSchedule, calcTimeline, paramsToQuery, queryToParams } = new Function(
+  block('CALC') + block('CODEC') + '; return { calcDough, calcSchedule, calcTimeline, paramsToQuery, queryToParams };'
 )();
 
 let fails = 0;
@@ -92,6 +92,21 @@ eq('freddo: fuori dal frigo = 4 h', s.pullOutH, 4);
 // --- SCHEDULE: senza tAmb/tFrigo usa i default 21/4 ---
 s = calcSchedule({}, calcDough(base));
 eq('sched default = come 21/4', s.waterC, 17);
+
+// --- TIMELINE: a ritroso dall'infornata, con il programma di default (21/4) ---
+{
+  const H = 3600000, MIN = 60000, bake = 1000000000000;
+  const tl = calcTimeline(bake, calcSchedule({ tAmb: 21, tFrigo: 4 }, calcDough(base)));
+  const at = Object.fromEntries(tl.map(x => [x.k, x.at]));
+  eq('timeline: 6 tappe', tl.length, 6);
+  eq('timeline: inforna = orario scelto', at.calBake, bake);
+  eq('timeline: staglio = -3 h', at.calBalls, bake - 3 * H);
+  eq('timeline: chiusura = staglio - 25 min', at.calMix, at.calBalls - 25 * MIN);
+  eq('timeline: fuori dal frigo = chiusura - 3 h', at.calFridgeOut, at.calMix - 3 * H);
+  eq('timeline: in frigo = fuori - 20 h', at.calFridgeIn, at.calFridgeOut - 20 * H);
+  eq('timeline: biga = in frigo - 65 min', at.calBiga, at.calFridgeIn - 65 * MIN);
+  eq('timeline: ordine crescente', tl.every((x, i) => i === 0 || x.at > tl[i - 1].at), true);
+}
 
 // --- CODEC: round-trip completo ---
 const p1 = { n: 4, peso: 260, idr: 68, bigaPct: 85, saleGkg: 22.5, olioGkg: 12.5, lievBigaPct: 1.2, lievChiusuraPct: 0.3, secco: true, germe: true, malto: true, maltoGkg: 8, tAmb: 25, tFrigo: 6 };

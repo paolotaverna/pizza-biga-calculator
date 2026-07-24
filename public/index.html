@@ -114,12 +114,19 @@
   .field label { display: flex; justify-content: space-between; align-items: baseline; font-size: .85rem; font-weight: 600; margin-bottom: .35rem; }
   .field label .val { color: var(--accent); font-variant-numeric: tabular-nums; font-weight: 700; }
   .field input[type="number"], .field input[type="text"],
+  .field input[type="datetime-local"],
   .field input[type="email"], .field input[type="password"] {
     width: 100%; padding: .45rem .6rem; font-size: 1rem; font-family: inherit;
     font-variant-numeric: tabular-nums;
     border: 1px solid var(--line); border-radius: 7px; background: var(--field); color: var(--ink);
   }
   .field input[type="range"] { width: 100%; accent-color: var(--accent); }
+  .caltab { width: 100%; border-collapse: collapse; margin-top: .5rem; font-size: .92rem; }
+  .caltab th { text-align: left; font-size: .68rem; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); padding: .3rem .5rem .3rem 0; border-bottom: 1px solid var(--line); }
+  .caltab td { padding: .45rem .5rem .45rem 0; border-bottom: 1px solid var(--line); vertical-align: top; }
+  .caltab td.when { white-space: nowrap; font-variant-numeric: tabular-nums; font-weight: 700; color: var(--accent); }
+  .caltab .note { display: block; font-size: .78rem; color: var(--muted); font-weight: 400; }
+  .calwarn { color: #9e2b25; font-size: .82rem; font-weight: 600; margin: .4rem 0 0; }
   .field input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
   .field .hint { font-size: .75rem; color: var(--muted); margin-top: .25rem; }
 
@@ -418,6 +425,18 @@
         <div class="row"><span class="what" data-i18n="schedWater">Acqua della chiusura <span class="note">per impasto a 23–25 °C a fine impastata</span></span><span class="dots"></span><span class="qty" id="sWater">~17 °C</span></div>
         <div class="row"><span class="what" data-i18n="schedAppr">Appretto dei panetti <span class="note">test del dito: la fossetta risale piano</span></span><span class="dots"></span><span class="qty" id="sAppr">~3 h</span></div>
       </div>
+      <div class="rcard">
+        <p class="day" data-i18n="calTitle">Il calendario · dimmi quando vuoi infornare</p>
+        <div class="field">
+          <label for="bakeAt" data-i18n="calLabel">Inforno il…</label>
+          <input type="datetime-local" id="bakeAt">
+        </div>
+        <p class="calwarn" id="calWarn" hidden data-i18n="calPast">⚠️ Per infornare a questa ora avresti dovuto già iniziare: scegli un momento più avanti.</p>
+        <table class="caltab">
+          <thead><tr><th data-i18n="calColWhen">Quando</th><th data-i18n="calColWhat">Cosa fare</th></tr></thead>
+          <tbody id="calBody"></tbody>
+        </table>
+      </div>
     </div>
 
     <div class="panel">
@@ -602,6 +621,25 @@
     var apprettoH = clamp(Math.round(3 * Math.pow(2, (21 - tA) / 6) * 2) / 2, 1.5, 5);
     return { restMin: restMin, fridgeH: fridgeH, pullOutH: pullOutH, waterC: waterC, apprettoH: apprettoH };
   }
+
+  // Calendario: dall'orario di infornata (ms) a ritroso, usando il programma s.
+  // Puro: nessuna lettura dell'orologio, così è testabile. ~25 min tra chiusura e staglio.
+  function calcTimeline(bakeMs, s) {
+    var MIN = 60000, H = 3600000;
+    var staglio = bakeMs - s.apprettoH * H;
+    var chiusura = staglio - 25 * MIN;
+    var fuoriFrigo = chiusura - s.pullOutH * H;
+    var inFrigo = fuoriFrigo - s.fridgeH * H;
+    var biga = inFrigo - s.restMin * MIN;
+    return [
+      { k: 'calBiga', at: biga },
+      { k: 'calFridgeIn', at: inFrigo },
+      { k: 'calFridgeOut', at: fuoriFrigo },
+      { k: 'calMix', at: chiusura },
+      { k: 'calBalls', at: staglio },
+      { k: 'calBake', at: bakeMs }
+    ];
+  }
   // === CALC END ===
 
   // === CODEC START ===
@@ -688,6 +726,16 @@
       schedPull: 'Biga fuori dal frigo prima di impastare <span class="note">matura e si intiepidisce</span>',
       schedWater: 'Acqua della chiusura <span class="note">per impasto a 23–25 °C a fine impastata</span>',
       schedAppr: 'Appretto dei panetti <span class="note">test del dito: la fossetta risale piano</span>',
+      calTitle: 'Il calendario · dimmi quando vuoi infornare',
+      calLabel: 'Inforno il…',
+      calColWhen: 'Quando', calColWhat: 'Cosa fare',
+      calPast: '⚠️ Per infornare a questa ora avresti dovuto già iniziare: scegli un momento più avanti.',
+      calBiga: 'Prepara la biga', calBigaN: 'a gnocchetti · poi ~{x} min a T.A.',
+      calFridgeIn: 'Biga in frigorifero', calFridgeInN: 'panno umido sopra · ~{x} h',
+      calFridgeOut: 'Biga fuori dal frigo', calFridgeOutN: 'spezzata a pezzi in un contenitore largo',
+      calMix: 'Chiusura impasto', calMixN: 'impastatrice 12–15 min · acqua a ~{x} °C · sale subito',
+      calBalls: 'Staglio: forma i panetti', calBallsN: 'contenitori unti · appretto ~{x} h · test del dito',
+      calBake: 'Inforna!', calBakeN: 'platea rovente · 60–90 secondi',
       day1: 'Giorno 1 · sera', theBiga: 'La biga',
       strongFlour: 'Farina forte <span class="note">W ≥ 300 (o Manitoba)</span>',
       coldWater: 'Acqua <span class="note">fredda di frigo</span>',
@@ -759,6 +807,16 @@
       schedPull: 'Biga out of the fridge before mixing <span class="note">it matures and takes the chill off</span>',
       schedWater: 'Water for the final mix <span class="note">for dough at 23–25 °C off the mixer</span>',
       schedAppr: 'Final proof of the balls <span class="note">poke test: the dimple springs back slowly</span>',
+      calTitle: 'The calendar · tell me when you want to bake',
+      calLabel: 'I bake on…',
+      calColWhen: 'When', calColWhat: 'What to do',
+      calPast: '⚠️ To bake at this time you should have already started: pick a later moment.',
+      calBiga: 'Make the biga', calBigaN: 'into lumps · then ~{x} min at room temp',
+      calFridgeIn: 'Biga into the fridge', calFridgeInN: 'damp cloth on top · ~{x} h',
+      calFridgeOut: 'Biga out of the fridge', calFridgeOutN: 'broken into chunks in a wide container',
+      calMix: 'Final mix', calMixN: 'mixer 12–15 min · water at ~{x} °C · salt right away',
+      calBalls: 'Divide: shape the balls', calBallsN: 'oiled containers · proof ~{x} h · poke test',
+      calBake: 'Bake!', calBakeN: 'blazing floor · 60–90 seconds',
       day1: 'Day 1 · evening', theBiga: 'The biga',
       strongFlour: 'Strong flour <span class="note">W ≥ 300 (or Manitoba)</span>',
       coldWater: 'Water <span class="note">fridge-cold</span>',
@@ -923,6 +981,30 @@
     $('sAppr').textContent = '~' + hMezze(s.apprettoH) + ' h';
     var wNote = document.getElementById('wNote');
     if (wNote) wNote.textContent = '~' + s.waterC + ' °C';
+
+    // Calendario: dalla data/ora di infornata scelta, a ritroso
+    var v = $('bakeAt').value;
+    var ms = v ? new Date(v).getTime() : NaN;
+    if (!isFinite(ms)) {
+      $('calBody').innerHTML = '';
+      $('calWarn').hidden = true;
+    } else {
+      var noteVals = {
+        calBiga: t('calBigaN').replace('{x}', s.restMin),
+        calFridgeIn: t('calFridgeInN').replace('{x}', s.fridgeH),
+        calFridgeOut: t('calFridgeOutN'),
+        calMix: t('calMixN').replace('{x}', s.waterC),
+        calBalls: t('calBallsN').replace('{x}', hMezze(s.apprettoH)),
+        calBake: t('calBakeN')
+      };
+      var loc = state.lang === 'it' ? 'it-IT' : 'en-US';
+      var tl = calcTimeline(ms, s);
+      $('calBody').innerHTML = tl.map(function (step) {
+        var when = new Date(step.at).toLocaleString(loc, { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+        return '<tr><td class="when">' + when + '</td><td>' + t(step.k) + '<span class="note">' + noteVals[step.k] + '</span></td></tr>';
+      }).join('');
+      $('calWarn').hidden = tl[0].at >= Date.now();
+    }
   }
 
   var urlTimer = null;
@@ -1189,11 +1271,20 @@
     });
   });
 
+  $('bakeAt').addEventListener('input', onInput);
+
   $('unitG').addEventListener('click', function () { setUnit('gkg'); });
   $('unitP').addEventListener('click', function () { setUnit('pct'); });
 
   $('langIt').addEventListener('click', function () { setLang('it'); });
   $('langEn').addEventListener('click', function () { setLang('en'); });
+
+  // Default calendario: domani alle 19:00
+  (function () {
+    var d = new Date(Date.now() + 86400000);
+    function p2(n) { return (n < 10 ? '0' : '') + n; }
+    $('bakeAt').value = d.getFullYear() + '-' + p2(d.getMonth() + 1) + '-' + p2(d.getDate()) + 'T19:00';
+  })();
 
   // ---------- Avvio: lingua (URL > salvata), eventuale stato dall'URL, poi render ----------
   var savedLang = 'it';
