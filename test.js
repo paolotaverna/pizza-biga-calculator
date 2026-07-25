@@ -10,8 +10,8 @@ function block(name) {
   if (!m) { console.error(`blocco ${name} non trovato in index.html`); process.exit(1); }
   return m[1];
 }
-const { calcDough, calcSchedule, calcTimeline, paramsToQuery, queryToParams } = new Function(
-  block('CALC') + block('CODEC') + '; return { calcDough, calcSchedule, calcTimeline, paramsToQuery, queryToParams };'
+const { calcDough, calcSchedule, calcTimeline, lievDirettaPct, calcDiretta, calcScheduleDiretta, calcTimelineDiretta, paramsToQuery, queryToParams } = new Function(
+  block('CALC') + block('CODEC') + '; return { calcDough, calcSchedule, calcTimeline, lievDirettaPct, calcDiretta, calcScheduleDiretta, calcTimelineDiretta, paramsToQuery, queryToParams };'
 )();
 
 let fails = 0;
@@ -106,6 +106,50 @@ eq('sched default = come 21/4', s.waterC, 17);
   eq('timeline: in frigo = fuori - 20 h', at.calFridgeIn, at.calFridgeOut - 20 * H);
   eq('timeline: biga = in frigo - 65 min', at.calBiga, at.calFridgeIn - 65 * MIN);
   eq('timeline: ordine crescente', tl.every((x, i) => i === 0 || x.at > tl[i - 1].at), true);
+}
+
+// --- DIRETTA: dose di lievito per percorso e temperatura ---
+eq('diretta lievito con frigo = 0.3%', lievDirettaPct({ frigoDiretta: true }), 0.003);
+eq('diretta lievito T.A. 21° = 0.2%', lievDirettaPct({ frigoDiretta: false, tAmb: 21 }), 0.002);
+eq('diretta lievito T.A. 27° = 0.1%', lievDirettaPct({ frigoDiretta: false, tAmb: 27 }), 0.001);
+
+// --- DIRETTA: impasto di riferimento (1 kg farina, 65%, sale 28 g/kg) ---
+const dbase = { n: 1, peso: 1681, idr: 65, saleGkg: 28, olioGkg: 0, secco: false, germe: false, malto: false, maltoGkg: 5, frigoDiretta: true, tAmb: 21, tFrigo: 4 };
+const rd = calcDiretta(dbase);
+eq('diretta: farina = 1000', rd.farinaTot, 1000);
+eq('diretta: acqua = 650', rd.acqua, 650);
+eq('diretta: sale = 28', rd.sale, 28);
+eq('diretta: lievito = 3', rd.liev, 3);
+eq('diretta: impasto = 1681', rd.impasto, 1681);
+
+// --- DIRETTA: programma 21/4, percorso con frigo ---
+const sd = calcScheduleDiretta(dbase, rd);
+eq('diretta: puntata pre-frigo = 60 min', sd.bulkMin, 60);
+eq('diretta: frigo = 20 h', sd.fridgeH, 20);
+eq('diretta: fuori dal frigo = 2.5 h', sd.pullOutH, 2.5);
+eq('diretta: appretto = 3 h', sd.apprettoH, 3);
+eq('diretta: acqua = 13 °C', sd.waterC, 13);
+
+// --- DIRETTA: calendario nei due percorsi ---
+{
+  const H = 3600000, MIN = 60000, bake = 1000000000000;
+  const tl = calcTimelineDiretta(bake, sd);
+  eq('diretta timeline frigo: 5 tappe', tl.length, 5);
+  eq('diretta timeline: staglio = -3 h', tl[3].at, bake - 3 * H);
+  eq('diretta timeline: impasta = -25.5 h - 60 min', tl[0].at, bake - 3 * H - 2.5 * H - 20 * H - 60 * MIN);
+  const sTA = calcScheduleDiretta({ ...dbase, frigoDiretta: false }, rd);
+  const tl2 = calcTimelineDiretta(bake, sTA);
+  eq('diretta timeline T.A.: 3 tappe', tl2.length, 3);
+  eq('diretta timeline T.A.: impasta = -7 h', tl2[0].at, bake - 7 * H);
+}
+
+// --- CODEC: metodo e percorso frigo ---
+{
+  const backD = queryToParams(paramsToQuery({ n: 6, peso: 270, metodo: 'diretta', frigoDiretta: false }));
+  eq('codec metodo = diretta', backD.metodo, 'diretta');
+  eq('codec frigoDiretta = false', backD.frigoDiretta, false);
+  const backB = queryToParams(paramsToQuery({ n: 6, peso: 270 }));
+  eq('codec metodo default = biga', backB.metodo, 'biga');
 }
 
 // --- CODEC: round-trip completo ---
