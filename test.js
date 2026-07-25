@@ -112,10 +112,15 @@ eq('sched default = come 21/4', s.waterC, 17);
 // Con frigo 24 h a 21/4: frigo = 24 - 1 - 2.5 - 3 = 17.5 h; ore equivalenti
 // a T.A. = 6.5 + 17.5 * 2^((4-21)/6); dose = 0.2% * 8 / eq.
 {
+  // percorso frigo: +40% (FRIGO_BOOST) per rigonfiare i panetti freddi
   const eq24 = 6.5 + 17.5 * Math.pow(2, (4 - 21) / 6);
-  eq('diretta lievito frigo 24 h', lievDirettaPct({ frigoDiretta: true, dirOre: 24, tAmb: 21, tFrigo: 4 }), 0.002 * 8 / eq24, 1e-6);
+  eq('diretta lievito frigo 24 h (+40%)', lievDirettaPct({ frigoDiretta: true, dirOre: 24, tAmb: 21, tFrigo: 4 }), 0.002 * 8 / eq24 * 1.4, 1e-6);
+  // il boost vale solo col frigo: a parità di ore equivalenti, T.A. non è toccato
+  const fr = lievDirettaPct({ frigoDiretta: true, dirOre: 24, tAmb: 21, tFrigo: 4 });
+  const noBoost = 0.002 * 8 / eq24;
+  eq('diretta: boost frigo = 1.4x del non-boost', fr, noBoost * 1.4, 1e-6);
 }
-eq('diretta lievito T.A. 8 h = 0.2%', lievDirettaPct({ frigoDiretta: false, dirOre: 8, tAmb: 21 }), 0.002, 1e-6);
+eq('diretta lievito T.A. 8 h = 0.2% (nessun boost)', lievDirettaPct({ frigoDiretta: false, dirOre: 8, tAmb: 21 }), 0.002, 1e-6);
 eq('diretta lievito T.A. 10 h = 0.16%', lievDirettaPct({ frigoDiretta: false, dirOre: 10, tAmb: 21 }), 0.0016, 1e-6);
 eq('diretta lievito T.A. 8 h a 27° = 0.1%', lievDirettaPct({ frigoDiretta: false, dirOre: 8, tAmb: 27 }), 0.001, 1e-6);
 eq('diretta lievito: tetto 0.5%', lievDirettaPct({ frigoDiretta: false, dirOre: 6, tAmb: 15 }), 0.005, 1e-6);

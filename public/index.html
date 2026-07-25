@@ -786,10 +786,14 @@
 
   // Dose di lievito fresco (frazione della farina), tarata sulla verace:
   // ~0.2% per 8 h a 21 °C; dimezza al raddoppiare delle ore equivalenti a T.A.
+  // Col frigo si aggiunge un +40%: dopo lo staglio i panetti freddi devono
+  // rigonfiarsi in un appretto breve e freddo, dove il lievito è pigro.
+  var FRIGO_BOOST = 1.4;
   function lievDirettaPct(p) {
     var tA = p.tAmb == null ? 21 : p.tAmb;
     var eqH = dirEqOre(p);
     var pct = 0.002 * (8 / eqH) * Math.pow(2, (21 - tA) / 6);
+    if (p.frigoDiretta !== false) pct *= FRIGO_BOOST;
     return Math.min(0.005, Math.max(0.0005, pct));
   }
 
