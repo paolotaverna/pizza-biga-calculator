@@ -10,8 +10,8 @@ function block(name) {
   if (!m) { console.error(`blocco ${name} non trovato in index.html`); process.exit(1); }
   return m[1];
 }
-const { calcDough, calcSchedule, calcTimeline, lievDirettaPct, dirWTier, calcDiretta, calcScheduleDiretta, calcTimelineDiretta, paramsToQuery, queryToParams } = new Function(
-  block('CALC') + block('CODEC') + '; return { calcDough, calcSchedule, calcTimeline, lievDirettaPct, dirWTier, calcDiretta, calcScheduleDiretta, calcTimelineDiretta, paramsToQuery, queryToParams };'
+const { calcDough, calcSchedule, calcTimeline, lievDirettaPct, dirWTier, dirFolds, frictionC, calcDiretta, calcScheduleDiretta, calcTimelineDiretta, paramsToQuery, queryToParams } = new Function(
+  block('CALC') + block('CODEC') + '; return { calcDough, calcSchedule, calcTimeline, lievDirettaPct, dirWTier, dirFolds, frictionC, calcDiretta, calcScheduleDiretta, calcTimelineDiretta, paramsToQuery, queryToParams };'
 )();
 
 let fails = 0;
@@ -148,6 +148,44 @@ eq('W: T.A. 24 h -> forte', dirWTier({ frigoDiretta: false, dirOre: 24, tAmb: 21
 eq('W: T.A. 16 h a 27° -> forte (estate)', dirWTier({ frigoDiretta: false, dirOre: 16, tAmb: 27 }).tier, 3);
 eq('W: tier 3 = 320-340', dirWTier({ frigoDiretta: false, dirOre: 24, tAmb: 21 }).wMin, 320);
 
+// --- MIXER: attrito e acqua di chiusura (spirale +6, a mano +3) ---
+eq('attrito spirale = 6', frictionC({ mixer: 'spirale' }), 6);
+eq('attrito a mano = 3', frictionC({ mixer: 'mano' }), 3);
+eq('attrito default (spirale) = 6', frictionC({}), 6);
+{
+  // a mano l'attrito è minore -> acqua più calda per lo stesso impasto a 24 °C
+  const wSpir = calcScheduleDiretta({ ...dbase, mixer: 'spirale' }, rd).waterC;
+  const wMano = calcScheduleDiretta({ ...dbase, mixer: 'mano' }, rd).waterC;
+  eq('a mano: acqua più calda della spirale', wMano > wSpir, true);
+  // 3 °C in meno di attrito sull'intero impasto = ~3*(farina+acqua)/acqua sull'acqua
+  const atteso = 3 * (rd.farinaTot + rd.acqua) / rd.acqua;
+  eq('a mano: acqua più calda in proporzione alla massa', Math.abs((wMano - wSpir) - atteso) <= 1, true);
+}
+
+// --- FOLDS: opzionali di default, consigliate se idr>67 o a mano ---
+eq('folds: 63% spirale = opzionali', dirFolds({ idr: 63, mixer: 'spirale' }).needed, false);
+eq('folds: 68% = consigliate', dirFolds({ idr: 68, mixer: 'spirale' }).needed, true);
+eq('folds: a mano = consigliate', dirFolds({ idr: 63, mixer: 'mano' }).needed, true);
+
+// --- TIMELINE: la piega compare tra impasto e frigo/staglio ---
+{
+  const H = 3600000, MIN = 60000, bake = 1000000000000;
+  const tlF = calcTimelineDiretta(bake, calcScheduleDiretta(dbase, rd));
+  eq('timeline frigo: ora 6 tappe (con pieghe)', tlF.length, 6);
+  eq('timeline frigo: piega dopo impasto', tlF[1].k, 'dirFolds');
+  eq('timeline frigo: piega a impasto+20min', tlF[1].at - tlF[0].at, 20 * MIN);
+  const tlT = calcTimelineDiretta(bake, calcScheduleDiretta({ ...dbase, frigoDiretta: false, dirOre: 8 }, rd));
+  eq('timeline T.A.: 4 tappe (con pieghe)', tlT.length, 4);
+  eq('timeline T.A.: piega in seconda posizione', tlT[1].k, 'dirFolds');
+}
+
+// --- CODEC: mixer ---
+{
+  const bk = queryToParams(paramsToQuery({ n: 6, peso: 270, mixer: 'mano' }));
+  eq('codec mixer = mano', bk.mixer, 'mano');
+  eq('codec mixer default = spirale', queryToParams(paramsToQuery({ n: 6, peso: 270 })).mixer, 'spirale');
+}
+
 // --- DIRETTA: germe e malto sono accessori della biga, qui ignorati ---
 {
   const rIgn = calcDiretta({ ...dbase, germe: true, malto: true });
@@ -170,12 +208,12 @@ eq('diretta: 1 + 17.5 + 2.5 + 3 = 24', sd.bulkMin / 60 + sd.fridgeH + sd.pullOut
 {
   const H = 3600000, bake = 1000000000000;
   const tl = calcTimelineDiretta(bake, sd);
-  eq('diretta timeline frigo: 5 tappe', tl.length, 5);
-  eq('diretta timeline: staglio = -3 h', tl[3].at, bake - 3 * H);
+  eq('diretta timeline frigo: 6 tappe', tl.length, 6);
+  eq('diretta timeline: staglio = -3 h', tl.find(x => x.k === 'calBalls').at, bake - 3 * H);
   eq('diretta timeline frigo: inizio = -24 h', tl[0].at, bake - 24 * H);
   const sTA = calcScheduleDiretta({ ...dbase, frigoDiretta: false, dirOre: 8 }, rd);
   const tl2 = calcTimelineDiretta(bake, sTA);
-  eq('diretta timeline T.A.: 3 tappe', tl2.length, 3);
+  eq('diretta timeline T.A.: 4 tappe', tl2.length, 4);
   eq('diretta timeline T.A. 8 h: inizio = -8 h', tl2[0].at, bake - 8 * H);
   const s10 = calcScheduleDiretta({ ...dbase, frigoDiretta: false, dirOre: 10 }, rd);
   eq('diretta timeline T.A. 10 h: inizio = -10 h', calcTimelineDiretta(bake, s10)[0].at, bake - 10 * H);

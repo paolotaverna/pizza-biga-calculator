@@ -424,6 +424,14 @@
       </div>
       <div class="hint" data-i18n="tempsHint">Da queste due temperature dipendono acqua e tempi del programma</div>
 
+      <div class="field">
+        <label id="mixerLabel" data-i18n="mixerType">Impastatrice</label>
+        <div class="seg" role="group" aria-labelledby="mixerLabel">
+          <button type="button" id="mixSpirale" aria-pressed="true" data-i18n="mixSpirale">A spirale</button>
+          <button type="button" id="mixMano" aria-pressed="false" data-i18n="mixMano">A mano</button>
+        </div>
+      </div>
+
       <div class="extras only-biga">
         <div class="chkline">
           <input type="checkbox" id="germe">
@@ -478,7 +486,8 @@
         <div class="row" id="rowDBulkTA" hidden><span class="what" data-i18n="dirBulkTA">Puntata a T.A. <span class="note">massa coperta, poi staglio</span></span><span class="dots"></span><span class="qty" id="sDBulkTA">~4 h</span></div>
         <div class="row"><span class="what" data-i18n="schedWater">Acqua della chiusura <span class="note">per impasto a 23–25 °C a fine impastata</span></span><span class="dots"></span><span class="qty" id="sWater">~17 °C</span></div>
         <div class="row"><span class="what" data-i18n="schedDough">Impasto a fine impastata <span class="note">misuralo con un termometro a sonda</span></span><span class="dots"></span><span class="qty">23–25 °C</span></div>
-        <div class="row"><span class="what" data-i18n="schedMixer">Impastatrice a spirale <span class="note">scalda l'impasto di ~6 °C</span></span><span class="dots"></span><span class="qty" data-i18n="schedMixerQty">1ª 10 min · 2ª 3 min</span></div>
+        <div class="row"><span class="what" id="sMixerWhat" data-i18n="schedMixer">Impastatrice a spirale <span class="note">scalda l'impasto di ~6 °C</span></span><span class="dots"></span><span class="qty" id="sMixerQty" data-i18n="schedMixerQty">1ª 10 min · 2ª 3 min</span></div>
+        <div class="row only-diretta" id="rowDFolds"><span class="what" id="sFoldsWhat" data-i18n="dirFoldsOpt">Pieghe di rinforzo <span class="note">opzionali · struttura e forza</span></span><span class="dots"></span><span class="qty" data-i18n="dirFoldsQty">1 giro · dopo ~20 min</span></div>
         <div class="row"><span class="what" data-i18n="schedAppr">Appretto dei panetti <span class="note">test del dito: la fossetta risale piano</span></span><span class="dots"></span><span class="qty" id="sAppr">~3 h</span></div>
       </div>
       <div class="rcard only-diretta">
@@ -738,11 +747,12 @@
     // fuori dal frigo prima della chiusura: recupera maturazione e temperatura
     var pullOutH = clamp(Math.round((2 + (6 - tF) * 0.25 + (23 - tA) * 0.15) * 2) / 2, 1.5, 4);
     // acqua di chiusura: bilancio termico per impasto a ~24 °C a fine impastata
-    // (attrito impastatrice ~ +6 °C; biga stimata dopo pullOutH ore fuori dal frigo)
+    // (attrito impastatrice: spirale ~+6 °C, a mano ~+3 °C; biga stimata dopo pullOutH ore fuori dal frigo)
     var tBiga = tA - 0.25 * (tA - tF);
     var mBiga = r.bigaTot, mFar = r.chiFarina, mAcq = Math.max(r.chiAcqua, 1);
     var mTot = mBiga + mFar + mAcq;
-    var waterC = clamp(Math.round(((24 - 6) * mTot - mBiga * tBiga - mFar * tA) / mAcq), 5, 28);
+    var fr = frictionC(p);
+    var waterC = clamp(Math.round(((24 - fr) * mTot - mBiga * tBiga - mFar * tA) / mAcq), 5, 28);
     // appretto: circa raddoppia ogni 6 °C in meno (base: 3 h a 21 °C)
     var apprettoH = clamp(Math.round(3 * Math.pow(2, (21 - tA) / 6) * 2) / 2, 1.5, 5);
     return { restMin: restMin, fridgeH: fridgeH, pullOutH: pullOutH, waterC: waterC, apprettoH: apprettoH };
@@ -766,6 +776,14 @@
       { k: 'calBake', at: bakeMs }
     ];
   }
+
+  // Attrito dell'impastatrice: la spirale scalda l'impasto di ~6 °C, l'impasto
+  // a mano molto meno (~3 °C). Serve al bilancio termico dell'acqua.
+  function frictionC(p) { return p.mixer === 'mano' ? 3 : 6; }
+
+  // Pieghe di rinforzo: sempre proposte nella diretta; diventano consigliate
+  // (non più opzionali) con idratazione alta (>67%) o impastando a mano.
+  function dirFolds(p) { return { needed: (p.idr > 67) || (p.mixer === 'mano') }; }
 
   // --- Metodo diretto ---
   // Ore di fermentazione totale valide per percorso (a T.A.: max verace
@@ -845,7 +863,8 @@
     var bulkMin = 60; // puntata prima del frigo
     var fridgeH = Math.max(4, ore - 1 - pullOutH - apprettoH);
     var bulkH = Math.max(1, ore - apprettoH); // puntata del percorso a T.A.
-    var waterC = clamp(Math.round(((24 - 6) * (r.farinaTot + r.acqua) - r.farinaTot * tA) / Math.max(r.acqua, 1)), 5, 28);
+    var fr = frictionC(p);
+    var waterC = clamp(Math.round(((24 - fr) * (r.farinaTot + r.acqua) - r.farinaTot * tA) / Math.max(r.acqua, 1)), 5, 28);
     return { frigo: frigo, ore: ore, bulkMin: bulkMin, bulkH: bulkH, fridgeH: fridgeH, pullOutH: pullOutH, waterC: waterC, apprettoH: apprettoH };
   }
 
@@ -858,14 +877,17 @@
       var impasta = dentro - s.bulkMin * MIN;
       return [
         { k: 'dirMix', at: impasta },
+        { k: 'dirFolds', at: impasta + 20 * MIN },
         { k: 'dirFridgeIn', at: dentro },
         { k: 'dirFridgeOut', at: fuori },
         { k: 'calBalls', at: staglio },
         { k: 'calBake', at: bakeMs }
       ];
     }
+    var impastaTA = staglio - s.bulkH * H;
     return [
-      { k: 'dirMix', at: staglio - s.bulkH * H },
+      { k: 'dirMix', at: impastaTA },
+      { k: 'dirFolds', at: impastaTA + 20 * MIN },
       { k: 'calBalls', at: staglio },
       { k: 'calBake', at: bakeMs }
     ];
@@ -901,6 +923,7 @@
     sp.set('malto', p.malto ? '1' : '0');
     sp.set('m', p.metodo === 'diretta' ? 'd' : 'b');
     sp.set('df', p.frigoDiretta === false ? '0' : '1');
+    sp.set('mx', p.mixer === 'mano' ? 'm' : 's');
     return sp.toString();
   }
 
@@ -925,12 +948,15 @@
     if (m === 'b') out.metodo = 'biga';
     if (sp.get('df') === '1') out.frigoDiretta = true;
     if (sp.get('df') === '0') out.frigoDiretta = false;
+    var mx = sp.get('mx');
+    if (mx === 'm') out.mixer = 'mano';
+    if (mx === 's') out.mixer = 'spirale';
     return out;
   }
   // === CODEC END ===
 
   var $ = function (id) { return document.getElementById(id); };
-  var state = { secco: false, lang: 'it', unit: 'gkg', metodo: 'biga', dirFrigo: true };
+  var state = { secco: false, lang: 'it', unit: 'gkg', metodo: 'biga', dirFrigo: true, mixer: 'spirale' };
   var STORE_KEY = 'pizzaBigaRicette';
   var LANG_KEY = 'pizzaBigaLang';
   var UNIT_KEY = 'pizzaBigaUnit'; // 'gkg' oppure 'pct' (percentuale del panificatore)
@@ -1001,6 +1027,15 @@
       schedDough: 'Impasto a fine impastata <span class="note">misuralo con un termometro a sonda</span>',
       schedMixer: 'Impastatrice a spirale <span class="note">scalda l\'impasto di ~6 °C</span>',
       schedMixerQty: '1ª 10 min · 2ª 3 min',
+      schedMixerHand: 'Impasto a mano <span class="note">scalda poco: ~3 °C</span>',
+      schedMixerHandQty: '~15–20 min · a più riprese',
+      mixerType: 'Impastatrice', mixSpirale: 'A spirale', mixMano: 'A mano',
+      dirFoldsOpt: 'Pieghe di rinforzo <span class="note">opzionali · struttura e forza</span>',
+      dirFoldsNeed: 'Pieghe di rinforzo <span class="note">consigliate: idratazione alta o a mano</span>',
+      dirFoldsQty: '1 giro · dopo ~20 min',
+      dirFolds: 'Pieghe di rinforzo',
+      dirFoldsCalOpt: 'opzionali · 1 giro delicato',
+      dirFoldsCalNeed: '1–2 giri · idratazione alta o a mano',
       dstep1: '<h3>Impasto unico</h3><p>Una sola farina, con la forza indicata dal riquadro <strong>«La farina giusta»</strong>, e il lievito indicato dal calcolatore. Nella <strong>spirale</strong>: quasi tutta l\'acqua in vasca <strong>alla temperatura del programma</strong> con il lievito sciolto, farina a pioggia in <strong>1ª velocità</strong> (8–10 minuti), <strong>sale a metà impastata</strong>, poi chiusura in <strong>2ª velocità</strong> (2–3 minuti) con l\'ultima acqua fredda a filo. Pronto quando è liscio, si stacca dalla vasca e "scoppietta". Target: <strong>23–25 °C</strong> a fine impastata.</p>',
       dstep2: '<h3>Puntata — con frigo o a temperatura ambiente</h3><p><strong>Con frigo:</strong> massa coperta a T.A. per la puntata del programma, poi in frigorifero per le ore indicate: il freddo matura l\'impasto e regala estensibilità e sapore. Il giorno dopo, fuori dal frigo per il tempo del programma prima dello staglio.</p><p><strong>A temperatura ambiente:</strong> puntata per le ore del programma, massa coperta, ed è già ora di staglio.</p>',
       dstep3: '<h3>Staglio e appretto</h3><p>Forma i panetti con pochi movimenti e mettili nei contenitori unti. Appretto per le ore del programma: pronto col <strong>test del dito</strong> — la fossetta risale piano.</p>',
@@ -1114,6 +1149,15 @@
       schedDough: 'Dough off the mixer <span class="note">measure it with a probe thermometer</span>',
       schedMixer: 'Spiral mixer <span class="note">warms the dough by ~6 °C</span>',
       schedMixerQty: '1st 10 min · 2nd 3 min',
+      schedMixerHand: 'Hand mixing <span class="note">warms little: ~3 °C</span>',
+      schedMixerHandQty: '~15–20 min · in stages',
+      mixerType: 'Mixer', mixSpirale: 'Spiral', mixMano: 'By hand',
+      dirFoldsOpt: 'Strengthening folds <span class="note">optional · structure and strength</span>',
+      dirFoldsNeed: 'Strengthening folds <span class="note">recommended: high hydration or by hand</span>',
+      dirFoldsQty: '1 set · after ~20 min',
+      dirFolds: 'Strengthening folds',
+      dirFoldsCalOpt: 'optional · 1 gentle set',
+      dirFoldsCalNeed: '1–2 sets · high hydration or by hand',
       dstep1: '<h3>The single dough</h3><p>One flour, at the strength shown in the <strong>«The right flour»</strong> card, and the yeast dose shown by the calculator. In the <strong>spiral mixer</strong>: nearly all the water in the bowl <strong>at the temperature from the schedule</strong> with the yeast dissolved, flour rained in on <strong>1st speed</strong> (8–10 minutes), <strong>salt halfway through</strong>, then closing on <strong>2nd speed</strong> (2–3 minutes) with the last cold water in a stream. Ready when smooth, pulling away from the bowl and "crackling". Target: <strong>23–25 °C</strong> off the mixer.</p>',
       dstep2: '<h3>Bulk — with fridge or at room temperature</h3><p><strong>With fridge:</strong> covered mass at room temp for the bulk rest in the schedule, then into the refrigerator for the hours shown: the cold matures the dough and buys extensibility and flavour. The next day, out of the fridge for the time in the schedule before dividing.</p><p><strong>Room temperature:</strong> bulk proof for the hours in the schedule, covered, and then it\'s time to divide.</p>',
       dstep3: '<h3>Dividing and final proof</h3><p>Shape the balls with few movements and place them in oiled containers. Proof for the hours in the schedule: ready with the <strong>poke test</strong> — the dimple springs back slowly.</p>',
@@ -1235,6 +1279,7 @@
       tFrigo: Math.min(10, Math.max(1, +$('tFrigo').value || 4)),
       metodo: state.metodo,
       frigoDiretta: state.dirFrigo,
+      mixer: state.mixer,
       dirOre: Math.min(48, Math.max(6, Math.round(+$('dirOre').value || 24)))
     };
   }
@@ -1322,11 +1367,22 @@
       var dirWNote = document.getElementById('dirWNote');
       if (dirWNote) dirWNote.textContent = wTxt;
       [1, 2, 3].forEach(function (i2) { $('fT' + i2).classList.toggle('fon', wt.tier === i2); });
+      var folds = dirFolds(p);
+      $('sFoldsWhat').setAttribute('data-i18n', folds.needed ? 'dirFoldsNeed' : 'dirFoldsOpt');
+      $('sFoldsWhat').innerHTML = t(folds.needed ? 'dirFoldsNeed' : 'dirFoldsOpt');
+      $('rowDFolds').classList.toggle('fon', folds.needed);
     }
     $('sWater').textContent = '~' + s.waterC + ' °C';
     $('sAppr').textContent = '~' + hMezze(s.apprettoH) + ' h';
     var wNote = document.getElementById('wNote');
     if (wNote) wNote.textContent = '~' + s.waterC + ' °C';
+
+    // riga impastatrice: etichetta, nota e tempi secondo spirale / a mano
+    var mano = state.mixer === 'mano';
+    $('sMixerWhat').setAttribute('data-i18n', mano ? 'schedMixerHand' : 'schedMixer');
+    $('sMixerWhat').innerHTML = t(mano ? 'schedMixerHand' : 'schedMixer');
+    $('sMixerQty').setAttribute('data-i18n', mano ? 'schedMixerHandQty' : 'schedMixerQty');
+    $('sMixerQty').textContent = t(mano ? 'schedMixerHandQty' : 'schedMixerQty');
 
     // Calendario: dalla data/ora di infornata scelta, a ritroso
     var ms = calMs('bakeDate', 'bakeTime');
@@ -1342,6 +1398,7 @@
         dirFridgeOut: t('dirFridgeOutN'),
         calMix: t('calMixN').replace('{x}', s.waterC),
         dirMix: t('dirMixN').replace('{x}', s.waterC),
+        dirFolds: dirFolds(p).needed ? t('dirFoldsCalNeed') : t('dirFoldsCalOpt'),
         calBalls: t('calBallsN').replace('{x}', hMezze(s.apprettoH)),
         calBake: t('calBakeN')
       };
@@ -1395,12 +1452,12 @@
     n: 6, peso: 270, idr: 70, bigaPct: 50, saleGkg: 20, olioGkg: 0,
     lievBigaPct: 1, lievChiusuraPct: 0.5, secco: false,
     germe: false, malto: false, maltoGkg: 5, tAmb: 21, tFrigo: 4,
-    metodo: 'biga', frigoDiretta: true, dirOre: 24
+    metodo: 'biga', frigoDiretta: true, dirOre: 24, mixer: 'spirale'
   };
   var PRESET_DIRETTA = {
     n: 6, peso: 277, idr: 63, saleGkg: 30, olioGkg: 0, secco: false,
     germe: false, malto: false, tAmb: 21, tFrigo: 4,
-    metodo: 'diretta', frigoDiretta: true, dirOre: 24
+    metodo: 'diretta', frigoDiretta: true, dirOre: 24, mixer: 'spirale'
   };
 
   function setMetodo(m) {
@@ -1417,6 +1474,13 @@
     }
     onInput();
   }
+
+  function setMixerState(m) {
+    state.mixer = m === 'mano' ? 'mano' : 'spirale';
+    $('mixSpirale').setAttribute('aria-pressed', state.mixer === 'spirale');
+    $('mixMano').setAttribute('aria-pressed', state.mixer === 'mano');
+  }
+  function setMixer(m) { setMixerState(m); onInput(); }
 
   function setDirRouteState(frigo) {
     state.dirFrigo = !!frigo;
@@ -1459,6 +1523,7 @@
     }
     if (p.metodo != null) setMetodoState(p.metodo);
     if (p.frigoDiretta != null) setDirRouteState(p.frigoDiretta);
+    if (p.mixer != null) setMixerState(p.mixer);
     if (p.dirOre != null) {
       var o = $('dirOre');
       o.value = Math.min(+o.max, Math.max(+o.min, p.dirOre));
@@ -1666,6 +1731,8 @@
   $('mDiretta').addEventListener('click', function () { setMetodo('diretta'); });
   $('dFrigo').addEventListener('click', function () { setDirRoute(true); });
   $('dTA').addEventListener('click', function () { setDirRoute(false); });
+  $('mixSpirale').addEventListener('click', function () { setMixer('spirale'); });
+  $('mixMano').addEventListener('click', function () { setMixer('mano'); });
   [['q8', 8, false], ['q10', 10, false], ['q16', 16, true], ['q24', 24, true]].forEach(function (q) {
     $(q[0]).addEventListener('click', function () {
       setDirRouteState(q[2]);
