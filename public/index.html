@@ -1378,12 +1378,32 @@
     });
     document.title = t(d ? 'docTitleDir' : 'docTitle');
   }
+  // Ricette di default per metodo (peso/temperature restano quelli dell'utente
+  // quando si cambia solo metodo; il pulsante "Ripristina" applica tutto).
+  var PRESET_BIGA = {
+    n: 6, peso: 270, idr: 70, bigaPct: 50, saleGkg: 20, olioGkg: 0,
+    lievBigaPct: 1, lievChiusuraPct: 0.5, secco: false,
+    germe: false, malto: false, maltoGkg: 5, tAmb: 21, tFrigo: 4,
+    metodo: 'biga', frigoDiretta: true, dirOre: 24
+  };
+  var PRESET_DIRETTA = {
+    n: 6, peso: 277, idr: 63, saleGkg: 30, olioGkg: 0, secco: false,
+    germe: false, malto: false, tAmb: 21, tFrigo: 4,
+    metodo: 'diretta', frigoDiretta: true, dirOre: 24
+  };
+
   function setMetodo(m) {
     var next = m === 'diretta' ? 'diretta' : 'biga';
     var changed = state.metodo !== next;
     setMetodoState(m);
-    // idratazione di default del metodo: 63% diretta, 70% biga
-    if (changed) $('idr').value = next === 'diretta' ? 63 : 70;
+    // cambiando metodo si applica il carattere della ricetta (idratazione,
+    // sale, e per la diretta percorso+ore); peso e temperature restano.
+    if (changed) {
+      var d = next === 'diretta';
+      $('idr').value = d ? PRESET_DIRETTA.idr : PRESET_BIGA.idr;
+      $('sale').value = gkgToDisplay(d ? PRESET_DIRETTA.saleGkg : PRESET_BIGA.saleGkg);
+      if (d) { setDirRouteState(true); $('dirOre').value = PRESET_DIRETTA.dirOre; }
+    }
     onInput();
   }
 
@@ -1674,12 +1694,7 @@
   });
 
   $('presetDefault').addEventListener('click', function () {
-    applyParams({
-      n: 6, peso: 270, idr: 70, bigaPct: 50, saleGkg: 20, olioGkg: 0,
-      lievBigaPct: 1, lievChiusuraPct: 0.5, secco: false,
-      germe: false, malto: false, maltoGkg: 5, tAmb: 21, tFrigo: 4,
-      metodo: 'biga', frigoDiretta: true, dirOre: 24
-    });
+    applyParams(state.metodo === 'diretta' ? PRESET_DIRETTA : PRESET_BIGA);
   });
 
   $('bakeDate').addEventListener('change', onInput);
