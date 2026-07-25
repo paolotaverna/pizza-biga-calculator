@@ -121,8 +121,17 @@
     border: 1px solid var(--line); border-radius: 7px; background: var(--field); color: var(--ink);
   }
   .field input[type="range"] { width: 100%; accent-color: var(--accent); }
+  .flourgoal { margin-bottom: .5rem; padding-bottom: .6rem; border-bottom: 1px solid var(--line); }
   .flourrow { opacity: .5; }
-  .flourrow.fon { opacity: 1; }
+  .rcard .flourrow.fon {
+    opacity: 1;
+    border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent);
+    background: color-mix(in srgb, var(--accent) 6%, transparent);
+    border-radius: 8px;
+    padding: .42rem .6rem;
+    margin: .15rem -.6rem;
+  }
+  .rcard .flourrow.fon + .row { border-top: none; }
   .flourrow.fon .qty { color: var(--accent); }
   body:not(.mode-diretta) .only-diretta { display: none !important; }
   body.mode-diretta .only-biga { display: none !important; }
@@ -467,7 +476,7 @@
       </div>
       <div class="rcard only-diretta">
         <p class="day" data-i18n="flourTitle">La farina giusta · per le tue ore</p>
-        <div class="row"><span class="what" data-i18n="flourGoal">Obiettivo per il tuo programma <span class="note">più ore a T.A. = più forza</span></span><span class="dots"></span><span class="qty" id="fGoal">W 260–290</span></div>
+        <div class="row flourgoal"><span class="what" data-i18n="flourGoal">🎯 Obiettivo per il tuo programma <span class="note">più ore a T.A. = più forza</span></span><span class="dots"></span><span class="qty" id="fGoal">W 260–290</span></div>
         <div class="row flourrow fon" id="fT1"><span class="what" data-i18n="flourT1">Farina classica <span class="note">es. Caputo Nuvola o Pizzeria</span></span><span class="dots"></span><span class="qty">W 260–290</span></div>
         <div class="row flourrow" id="fT2"><span class="what" data-i18n="flourT2">Taglio 50/50 <span class="note">es. Nuvola + Nuvola Super</span></span><span class="dots"></span><span class="qty">W ~300–320</span></div>
         <div class="row flourrow" id="fT3"><span class="what" data-i18n="flourT3">Farina forte <span class="note">es. Nuvola Super, o taglio con Manitoba</span></span><span class="dots"></span><span class="qty">W 320–340</span></div>
@@ -961,7 +970,7 @@
       dirDay: 'Metodo diretto', dirDough: "L'impasto unico",
       dirFlour: 'Farina <span class="note" id="dirWNote">W 260–290</span>',
       flourTitle: 'La farina giusta · per le tue ore',
-      flourGoal: 'Obiettivo per il tuo programma <span class="note">più ore a T.A. = più forza</span>',
+      flourGoal: '🎯 Obiettivo per il tuo programma <span class="note">più ore a T.A. = più forza</span>',
       flourT1: 'Farina classica <span class="note">es. Caputo Nuvola o Pizzeria</span>',
       flourT2: 'Taglio 50/50 <span class="note">es. Nuvola + Nuvola Super</span>',
       flourT3: 'Farina forte <span class="note">es. Nuvola Super, o taglio con Manitoba</span>',
@@ -1074,7 +1083,7 @@
       dirDay: 'Direct method', dirDough: 'The single dough',
       dirFlour: 'Flour <span class="note" id="dirWNote">W 260–290</span>',
       flourTitle: 'The right flour · for your hours',
-      flourGoal: 'Target for your schedule <span class="note">more hours at room temp = more strength</span>',
+      flourGoal: '🎯 Target for your schedule <span class="note">more hours at room temp = more strength</span>',
       flourT1: 'Classic flour <span class="note">e.g. Caputo Nuvola or Pizzeria</span>',
       flourT2: '50/50 blend <span class="note">e.g. Nuvola + Nuvola Super</span>',
       flourT3: 'Strong flour <span class="note">e.g. Nuvola Super, or cut with Manitoba</span>',
