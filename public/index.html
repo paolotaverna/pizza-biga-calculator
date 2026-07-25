@@ -121,6 +121,13 @@
     border: 1px solid var(--line); border-radius: 7px; background: var(--field); color: var(--ink);
   }
   .field input[type="range"] { width: 100%; accent-color: var(--accent); }
+  .calframe {
+    border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent);
+    background: color-mix(in srgb, var(--accent) 6%, transparent);
+    border-radius: 10px;
+    padding: .7rem .8rem .4rem;
+    margin-bottom: .8rem;
+  }
   .flourgoal { margin-bottom: .5rem; padding-bottom: .6rem; border-bottom: 1px solid var(--line); }
   .flourrow { opacity: .5; }
   .rcard .flourrow.fon {
@@ -483,7 +490,7 @@
       </div>
       <div class="rcard">
         <p class="day" data-i18n="calTitle">Il calendario · dimmi quando vuoi infornare</p>
-        <div class="duo">
+        <div class="duo calframe">
           <div class="field">
             <label for="bakeDate" data-i18n="calLabel">Inforno il…</label>
             <input type="date" id="bakeDate">
@@ -493,7 +500,7 @@
             <select id="bakeTime"></select>
           </div>
         </div>
-        <div class="duo only-diretta">
+        <div class="duo calframe only-diretta">
           <div class="field">
             <label for="mixDate" data-i18n="dirMixAt">Inizio (impasto) il…</label>
             <input type="date" id="mixDate">
