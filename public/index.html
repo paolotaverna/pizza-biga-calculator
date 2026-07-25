@@ -121,8 +121,7 @@
     border: 1px solid var(--line); border-radius: 7px; background: var(--field); color: var(--ink);
   }
   .field input[type="range"] { width: 100%; accent-color: var(--accent); }
-  .only-diretta { display: none !important; }
-  body.mode-diretta .only-diretta { display: revert !important; }
+  body:not(.mode-diretta) .only-diretta { display: none !important; }
   body.mode-diretta .only-biga { display: none !important; }
   body.mode-diretta .cards { grid-template-columns: 1fr; }
   .caltab { width: 100%; border-collapse: collapse; margin-top: .5rem; font-size: .92rem; }
@@ -406,7 +405,7 @@
       </div>
       <div class="hint" data-i18n="tempsHint">Da queste due temperature dipendono acqua e tempi del programma</div>
 
-      <div class="extras">
+      <div class="extras only-biga">
         <div class="chkline">
           <input type="checkbox" id="germe">
           <label for="germe" data-i18n="germLabel">Germe di grano<span class="chknote">5 g/kg in chiusura</span></label>
@@ -464,13 +463,25 @@
       </div>
       <div class="rcard">
         <p class="day" data-i18n="calTitle">Il calendario · dimmi quando vuoi infornare</p>
-        <div class="field">
-          <label for="bakeAt" data-i18n="calLabel">Inforno il…</label>
-          <input type="datetime-local" id="bakeAt">
+        <div class="duo">
+          <div class="field">
+            <label for="bakeDate" data-i18n="calLabel">Inforno il…</label>
+            <input type="date" id="bakeDate">
+          </div>
+          <div class="field">
+            <label for="bakeTime" data-i18n="calAt">alle…</label>
+            <select id="bakeTime"></select>
+          </div>
         </div>
-        <div class="field only-diretta">
-          <label for="mixAt" data-i18n="dirMixAt">Inizio (impasto) il…</label>
-          <input type="datetime-local" id="mixAt">
+        <div class="duo only-diretta">
+          <div class="field">
+            <label for="mixDate" data-i18n="dirMixAt">Inizio (impasto) il…</label>
+            <input type="date" id="mixDate">
+          </div>
+          <div class="field">
+            <label for="mixTime" data-i18n="calAt">alle…</label>
+            <select id="mixTime"></select>
+          </div>
         </div>
         <p class="calwarn" id="calWarn" hidden data-i18n="calPast">⚠️ Per infornare a questa ora avresti dovuto già iniziare: scegli un momento più avanti.</p>
         <table class="caltab">
@@ -748,14 +759,13 @@
     var salePct = p.saleGkg / 1000;
     var yFactor = p.secco ? 0.5 : 1;
     var lievPct = lievDirettaPct(p) * yFactor;
-    var germePct = p.germe ? 0.005 : 0;
-    var maltoPct = p.malto ? p.maltoGkg / 1000 : 0;
     var olioPct = (p.olioGkg || 0) / 1000;
-    var perFlour = 1 + idr + salePct + lievPct + germePct + maltoPct + olioPct;
+    // niente germe né malto nella diretta: sono accessori del metodo biga
+    var perFlour = 1 + idr + salePct + lievPct + olioPct;
     var F = (p.n * p.peso) / perFlour;
     return {
       farinaTot: F, acqua: F * idr, sale: F * salePct, liev: F * lievPct,
-      lievPct: lievPct, germe: F * germePct, malto: F * maltoPct, olio: F * olioPct,
+      lievPct: lievPct, germe: 0, malto: 0, olio: F * olioPct,
       impasto: F * perFlour, panetti: p.n, peso: p.peso
     };
   }
@@ -787,8 +797,8 @@
       var impasta = dentro - s.bulkMin * MIN;
       return [
         { k: 'dirMix', at: impasta },
-        { k: 'calFridgeIn', at: dentro },
-        { k: 'calFridgeOut', at: fuori },
+        { k: 'dirFridgeIn', at: dentro },
+        { k: 'dirFridgeOut', at: fuori },
         { k: 'calBalls', at: staglio },
         { k: 'calBake', at: bakeMs }
       ];
@@ -918,6 +928,10 @@
       dirOreLabel: 'Fermentazione totale',
       dirOreHint: 'Il lievito si adatta alle ore: massimo 24 h in giornata, 48 h con frigo',
       dirMixAt: 'Inizio (impasto) il…',
+      calAt: 'alle…',
+      docTitleDir: 'Pizza Napoletana Diretta — Calcolatore',
+      dirFridgeIn: 'Impasto in frigorifero', dirFridgeInN: 'contenitore chiuso · ~{x} h',
+      dirFridgeOut: 'Impasto fuori dal frigo',
       schedDough: 'Impasto a fine impastata <span class="note">misuralo con un termometro a sonda</span>',
       dstep1: '<h3>Impasto unico</h3><p>Una sola farina (<strong>W 260–290</strong>) e il lievito indicato dal calcolatore. Sciogli il lievito nell\'acqua <strong>alla temperatura del programma</strong>, versa quasi tutta l\'acqua sulla farina, poi il <strong>sale a metà impastata</strong> e il resto dell\'acqua a filo. Servono <strong>12–15 minuti</strong>: pronto quando è liscio e si stacca dalla vasca. Target: <strong>23–25 °C</strong> a fine impastata.</p>',
       dstep2: '<h3>Puntata — con frigo o in giornata</h3><p><strong>Con frigo:</strong> massa coperta a T.A. per la puntata del programma, poi in frigorifero per le ore indicate: il freddo matura l\'impasto e regala estensibilità e sapore. Il giorno dopo, fuori dal frigo per il tempo del programma prima dello staglio.</p><p><strong>In giornata:</strong> puntata a T.A. per le ore del programma, massa coperta, ed è già ora di staglio.</p>',
@@ -1019,6 +1033,10 @@
       dirOreLabel: 'Total fermentation',
       dirOreHint: 'The yeast adapts to the hours: max 24 h same-day, 48 h with the fridge',
       dirMixAt: 'I start (mix) on…',
+      calAt: 'at…',
+      docTitleDir: 'Neapolitan Pizza Direct — Calculator',
+      dirFridgeIn: 'Dough into the fridge', dirFridgeInN: 'sealed container · ~{x} h',
+      dirFridgeOut: 'Dough out of the fridge',
       schedDough: 'Dough off the mixer <span class="note">measure it with a probe thermometer</span>',
       dstep1: '<h3>The single dough</h3><p>One flour (<strong>W 260–290</strong>) and the yeast dose shown by the calculator. Dissolve the yeast in water <strong>at the temperature from the schedule</strong>, pour most of the water over the flour, then the <strong>salt halfway through</strong> and the rest of the water little by little. It takes <strong>12–15 minutes</strong>: ready when smooth and pulling away from the bowl. Target: <strong>23–25 °C</strong> off the mixer.</p>',
       dstep2: '<h3>Bulk — with fridge or same day</h3><p><strong>With fridge:</strong> covered mass at room temp for the bulk rest in the schedule, then into the refrigerator for the hours shown: the cold matures the dough and buys extensibility and flavour. The next day, out of the fridge for the time in the schedule before dividing.</p><p><strong>Same day:</strong> bulk proof at room temp for the hours in the schedule, covered, and it\'s already time to divide.</p>',
@@ -1107,7 +1125,7 @@
     state.lang = lang === 'en' ? 'en' : 'it';
     try { localStorage.setItem(LANG_KEY, state.lang); } catch (e) { /* storage negato */ }
     document.documentElement.lang = state.lang;
-    document.title = t('docTitle');
+    document.title = t(state.metodo === 'diretta' ? 'docTitleDir' : 'docTitle');
     $('langIt').setAttribute('aria-pressed', state.lang === 'it');
     $('langEn').setAttribute('aria-pressed', state.lang === 'en');
     document.querySelectorAll('[data-i18n]').forEach(function (el) {
@@ -1150,6 +1168,10 @@
     function p2(n) { return (n < 10 ? '0' : '') + n; }
     return d.getFullYear() + '-' + p2(d.getMonth() + 1) + '-' + p2(d.getDate()) + 'T' + p2(d.getHours()) + ':' + p2(d.getMinutes());
   }
+  function calMs(dateId, timeId) {
+    var d = $(dateId).value, tm = $(timeId).value;
+    return d && tm ? new Date(d + 'T' + tm).getTime() : NaN;
+  }
   function g1(x) { return (Math.round(x * 10) / 10).toLocaleString(state.lang === 'it' ? 'it-IT' : 'en-US') + ' g'; }
 
   function render() {
@@ -1179,9 +1201,9 @@
       $('rChiLiev').textContent = g1(r.liev);
     }
     $('rSale').textContent = g1(r.sale);
-    $('rGermeRow').hidden = !p.germe;
+    $('rGermeRow').hidden = diretta || !p.germe;
     $('rGerme').textContent = g1(r.germe);
-    $('rMaltoRow').hidden = !p.malto;
+    $('rMaltoRow').hidden = diretta || !p.malto;
     $('rMalto').textContent = g1(r.malto);
     $('rOlioRow').hidden = !(p.olioGkg > 0);
     $('rOlio').textContent = g1(r.olio);
@@ -1224,8 +1246,7 @@
     if (wNote) wNote.textContent = '~' + s.waterC + ' °C';
 
     // Calendario: dalla data/ora di infornata scelta, a ritroso
-    var v = $('bakeAt').value;
-    var ms = v ? new Date(v).getTime() : NaN;
+    var ms = calMs('bakeDate', 'bakeTime');
     if (!isFinite(ms)) {
       $('calBody').innerHTML = '';
       $('calWarn').hidden = true;
@@ -1233,7 +1254,9 @@
       var noteVals = {
         calBiga: t('calBigaN').replace('{x}', s.restMin),
         calFridgeIn: t('calFridgeInN').replace('{x}', s.fridgeH),
-        calFridgeOut: diretta ? t('dirFridgeOutN') : t('calFridgeOutN'),
+        calFridgeOut: t('calFridgeOutN'),
+        dirFridgeIn: t('dirFridgeInN').replace('{x}', hMezze(s.fridgeH)),
+        dirFridgeOut: t('dirFridgeOutN'),
         calMix: t('calMixN').replace('{x}', s.waterC),
         dirMix: t('dirMixN').replace('{x}', s.waterC),
         calBalls: t('calBallsN').replace('{x}', hMezze(s.apprettoH)),
@@ -1246,7 +1269,11 @@
         return '<tr><td class="when">' + when + '</td><td>' + t(step.k) + '<span class="note">' + noteVals[step.k] + '</span></td></tr>';
       }).join('');
       $('calWarn').hidden = tl[0].at >= Date.now();
-      if (diretta && document.activeElement !== $('mixAt')) $('mixAt').value = isoLocal(new Date(tl[0].at));
+      if (diretta && document.activeElement !== $('mixDate') && document.activeElement !== $('mixTime')) {
+        var startIso = isoLocal(new Date(tl[0].at));
+        $('mixDate').value = startIso.slice(0, 10);
+        $('mixTime').value = startIso.slice(11, 16);
+      }
     }
   }
 
@@ -1277,6 +1304,7 @@
       el.setAttribute('data-i18n', pair[1]);
       el.innerHTML = t(pair[1]);
     });
+    document.title = t(d ? 'docTitleDir' : 'docTitle');
   }
   function setMetodo(m) {
     var next = m === 'diretta' ? 'diretta' : 'biga';
@@ -1543,16 +1571,18 @@
     });
   });
   $('dirOre').addEventListener('input', onInput);
-  $('mixAt').addEventListener('change', function () {
-    var b = new Date($('bakeAt').value).getTime();
-    var m = new Date(this.value).getTime();
+  function onMixEdited() {
+    var b = calMs('bakeDate', 'bakeTime');
+    var m = calMs('mixDate', 'mixTime');
     if (!isFinite(b) || !isFinite(m) || m >= b) { render(); return; }
     var ore = Math.round((b - m) / 3600000);
     setDirRouteState(ore >= 12);
     var o = $('dirOre');
     o.value = Math.min(+o.max, Math.max(+o.min, ore));
     onInput();
-  });
+  }
+  $('mixDate').addEventListener('change', onMixEdited);
+  $('mixTime').addEventListener('change', onMixEdited);
 
   ['nPanetti', 'pesoPanetto', 'idr', 'bigaPct', 'sale', 'olio', 'lievBiga', 'lievChiusura', 'maltoGkg', 'tAmb', 'tFrigo'].forEach(function (id) {
     $(id).addEventListener('input', onInput);
@@ -1580,7 +1610,8 @@
     });
   });
 
-  $('bakeAt').addEventListener('input', onInput);
+  $('bakeDate').addEventListener('change', onInput);
+  $('bakeTime').addEventListener('change', onInput);
 
   $('unitG').addEventListener('click', function () { setUnit('gkg'); });
   $('unitP').addEventListener('click', function () { setUnit('pct'); });
@@ -1588,11 +1619,19 @@
   $('langIt').addEventListener('click', function () { setLang('it'); });
   $('langEn').addEventListener('click', function () { setLang('en'); });
 
-  // Default calendario: domani alle 19:00
+  // Calendario: orari a passi di 30 minuti; default domani alle 19:00
   (function () {
-    var d = new Date(Date.now() + 86400000);
-    function p2(n) { return (n < 10 ? '0' : '') + n; }
-    $('bakeAt').value = d.getFullYear() + '-' + p2(d.getMonth() + 1) + '-' + p2(d.getDate()) + 'T19:00';
+    var opts = '';
+    for (var h = 0; h < 24; h++) {
+      ['00', '30'].forEach(function (mm) {
+        var v2 = (h < 10 ? '0' : '') + h + ':' + mm;
+        opts += '<option value="' + v2 + '">' + v2 + '</option>';
+      });
+    }
+    $('bakeTime').innerHTML = opts;
+    $('mixTime').innerHTML = opts;
+    $('bakeDate').value = isoLocal(new Date(Date.now() + 86400000)).slice(0, 10);
+    $('bakeTime').value = '19:00';
   })();
 
   // ---------- Avvio: lingua (URL > salvata), eventuale stato dall'URL, poi render ----------

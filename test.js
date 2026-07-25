@@ -134,6 +134,14 @@ const rd = calcDiretta(dbase);
   eq('diretta: impasto = 1681', rd.impasto, 1681, 0.001);
 }
 
+// --- DIRETTA: germe e malto sono accessori della biga, qui ignorati ---
+{
+  const rIgn = calcDiretta({ ...dbase, germe: true, malto: true });
+  eq('diretta ignora il germe', rIgn.germe, 0);
+  eq('diretta ignora il malto', rIgn.malto, 0);
+  eq('diretta: impasto invariato con germe/malto', rIgn.impasto, 1681, 0.001);
+}
+
 // --- DIRETTA: programma 21/4, frigo 24 h — il totale torna a 24 ---
 const sd = calcScheduleDiretta(dbase, rd);
 eq('diretta: ore totali = 24', sd.ore, 24);
