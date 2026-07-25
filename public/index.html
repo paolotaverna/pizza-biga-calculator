@@ -91,7 +91,13 @@
     display: grid; grid-template-columns: 20rem 1fr; gap: 1.25rem;
     align-items: start;
   }
-  @media (max-width: 47rem) { .calc { grid-template-columns: 1fr; } }
+  /* la colonna risultati occupa entrambe le righe: i due pannelli di sinistra
+     (lotto + le mie ricette) si impilano senza vuoti */
+  .calc > .results { grid-column: 2; grid-row: 1 / span 2; }
+  @media (max-width: 47rem) {
+    .calc { grid-template-columns: 1fr; }
+    .calc > .results { grid-column: 1; grid-row: auto; }
+  }
 
   .panel {
     background: var(--card); border: 1px solid var(--line); border-radius: 10px;
