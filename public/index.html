@@ -321,7 +321,7 @@
         <label id="dirRouteLabel" data-i18n="dirRoute">Percorso</label>
         <div class="seg" role="group" aria-labelledby="dirRouteLabel">
           <button type="button" id="dFrigo" aria-pressed="true" data-i18n="dirCold">Con frigo</button>
-          <button type="button" id="dTA" aria-pressed="false" data-i18n="dirTA">In giornata (T.A.)</button>
+          <button type="button" id="dTA" aria-pressed="false" data-i18n="dirTA">A temperatura ambiente</button>
         </div>
       </div>
 
@@ -334,7 +334,7 @@
           <button type="button" id="q24" aria-pressed="true">24 h</button>
         </div>
         <input type="range" id="dirOre" min="12" max="48" step="1" value="24">
-        <div class="hint" data-i18n="dirOreHint">Il lievito si adatta alle ore: massimo 24 h in giornata, 48 h con frigo</div>
+        <div class="hint" data-i18n="dirOreHint">Il lievito si adatta alle ore: massimo 24 h a T.A., 48 h con frigo</div>
       </div>
 
       <div class="duo">
@@ -618,9 +618,9 @@
     <div class="step">
       <div class="num">2</div>
       <div data-i18n="dstep2">
-        <h3>Puntata — con frigo o in giornata</h3>
+        <h3>Puntata — con frigo o a temperatura ambiente</h3>
         <p><strong>Con frigo:</strong> massa coperta a T.A. per la puntata del programma, poi in frigorifero per le ore indicate: il freddo matura l'impasto e regala estensibilità e sapore. Il giorno dopo, fuori dal frigo per il tempo del programma prima dello staglio.</p>
-        <p><strong>In giornata:</strong> puntata a T.A. per le ore del programma, massa coperta, ed è già ora di staglio.</p>
+        <p><strong>A temperatura ambiente:</strong> puntata per le ore del programma, massa coperta, ed è già ora di staglio.</p>
       </div>
     </div>
     <div class="step">
@@ -752,7 +752,7 @@
   }
 
   // --- Metodo diretto ---
-  // Ore di fermentazione totale valide per percorso (in giornata: max verace
+  // Ore di fermentazione totale valide per percorso (a T.A.: max verace
   // 24 h; con frigo: fino a 48 h per una farina W 260–290).
   function dirOreClamp(p) {
     var frigo = p.frigoDiretta !== false;
@@ -824,7 +824,7 @@
     var pullOutH = clamp(Math.round((2 + (6 - tF) * 0.15 + (23 - tA) * 0.1) * 2) / 2, 1.5, 3);
     var bulkMin = 60; // puntata prima del frigo
     var fridgeH = Math.max(4, ore - 1 - pullOutH - apprettoH);
-    var bulkH = Math.max(1, ore - apprettoH); // puntata in giornata
+    var bulkH = Math.max(1, ore - apprettoH); // puntata del percorso a T.A.
     var waterC = clamp(Math.round(((24 - 6) * (r.farinaTot + r.acqua) - r.farinaTot * tA) / Math.max(r.acqua, 1)), 5, 28);
     return { frigo: frigo, ore: ore, bulkMin: bulkMin, bulkH: bulkH, fridgeH: fridgeH, pullOutH: pullOutH, waterC: waterC, apprettoH: apprettoH };
   }
@@ -955,7 +955,7 @@
       calBalls: 'Staglio: forma i panetti', calBallsN: 'contenitori unti · appretto ~{x} h · test del dito',
       calBake: 'Inforna!', calBakeN: 'platea rovente · 60–90 secondi',
       metodo: 'Metodo', metodoBiga: 'Con Biga', metodoDiretta: 'Diretta',
-      dirRoute: 'Percorso', dirCold: 'Con frigo', dirTA: 'In giornata (T.A.)',
+      dirRoute: 'Percorso', dirCold: 'Con frigo', dirTA: 'A temperatura ambiente',
       h1Dir: 'Pizza Napoletana <em>Diretta</em>',
       subDir: 'La variante a metodo diretto della mia pizza: un solo impasto, un\'unica farina, con o senza frigo — acqua e tempi adattati alle temperature di casa tua.',
       dirDay: 'Metodo diretto', dirDough: "L'impasto unico",
@@ -972,7 +972,7 @@
       dirMix: 'Impasta (metodo diretto)', dirMixN: 'acqua a ~{x} °C · impasto a 23–25 °C · sale a metà impastata',
       dirFridgeOutN: 'massa coperta, a intiepidire',
       dirOreLabel: 'Fermentazione totale',
-      dirOreHint: 'Il lievito si adatta alle ore: massimo 24 h in giornata, 48 h con frigo',
+      dirOreHint: 'Il lievito si adatta alle ore: massimo 24 h a T.A., 48 h con frigo',
       dirMixAt: 'Inizio (impasto) il…',
       calAt: 'alle…',
       docTitleDir: 'Pizza Napoletana Diretta — Calcolatore',
@@ -982,7 +982,7 @@
       schedMixer: 'Impastatrice a spirale <span class="note">scalda l\'impasto di ~6 °C</span>',
       schedMixerQty: '1ª 10 min · 2ª 3 min',
       dstep1: '<h3>Impasto unico</h3><p>Una sola farina, con la forza indicata dal riquadro <strong>«La farina giusta»</strong>, e il lievito indicato dal calcolatore. Nella <strong>spirale</strong>: quasi tutta l\'acqua in vasca <strong>alla temperatura del programma</strong> con il lievito sciolto, farina a pioggia in <strong>1ª velocità</strong> (8–10 minuti), <strong>sale a metà impastata</strong>, poi chiusura in <strong>2ª velocità</strong> (2–3 minuti) con l\'ultima acqua fredda a filo. Pronto quando è liscio, si stacca dalla vasca e "scoppietta". Target: <strong>23–25 °C</strong> a fine impastata.</p>',
-      dstep2: '<h3>Puntata — con frigo o in giornata</h3><p><strong>Con frigo:</strong> massa coperta a T.A. per la puntata del programma, poi in frigorifero per le ore indicate: il freddo matura l\'impasto e regala estensibilità e sapore. Il giorno dopo, fuori dal frigo per il tempo del programma prima dello staglio.</p><p><strong>In giornata:</strong> puntata a T.A. per le ore del programma, massa coperta, ed è già ora di staglio.</p>',
+      dstep2: '<h3>Puntata — con frigo o a temperatura ambiente</h3><p><strong>Con frigo:</strong> massa coperta a T.A. per la puntata del programma, poi in frigorifero per le ore indicate: il freddo matura l\'impasto e regala estensibilità e sapore. Il giorno dopo, fuori dal frigo per il tempo del programma prima dello staglio.</p><p><strong>A temperatura ambiente:</strong> puntata per le ore del programma, massa coperta, ed è già ora di staglio.</p>',
       dstep3: '<h3>Staglio e appretto</h3><p>Forma i panetti con pochi movimenti e mettili nei contenitori unti. Appretto per le ore del programma: pronto col <strong>test del dito</strong> — la fossetta risale piano.</p>',
       dstep4: '<h3>Stesura e cottura</h3><p>Come sempre: semola sul banco, centro sottile, aria verso il bordo, forno rovente. La diretta dà una mollica più regolare della biga: cornicione ordinato, morso più delicato.</p>',
       day1: 'Giorno 1 · sera', theBiga: 'La biga',
@@ -1068,7 +1068,7 @@
       calBalls: 'Divide: shape the balls', calBallsN: 'oiled containers · proof ~{x} h · poke test',
       calBake: 'Bake!', calBakeN: 'blazing floor · 60–90 seconds',
       metodo: 'Method', metodoBiga: 'With Biga', metodoDiretta: 'Direct',
-      dirRoute: 'Route', dirCold: 'With fridge', dirTA: 'Same day (room temp)',
+      dirRoute: 'Route', dirCold: 'With fridge', dirTA: 'Room temperature',
       h1Dir: 'Neapolitan Pizza <em>Direct</em>',
       subDir: 'The direct-method variant of my pizza: one dough, one flour, with or without the fridge — water and times tuned to your home temperatures.',
       dirDay: 'Direct method', dirDough: 'The single dough',
@@ -1085,7 +1085,7 @@
       dirMix: 'Mix the dough (direct)', dirMixN: 'water at ~{x} °C · dough at 23–25 °C · salt halfway through',
       dirFridgeOutN: 'covered mass, warming up',
       dirOreLabel: 'Total fermentation',
-      dirOreHint: 'The yeast adapts to the hours: max 24 h same-day, 48 h with the fridge',
+      dirOreHint: 'The yeast adapts to the hours: max 24 h at room temp, 48 h with the fridge',
       dirMixAt: 'I start (mix) on…',
       calAt: 'at…',
       docTitleDir: 'Neapolitan Pizza Direct — Calculator',
@@ -1095,7 +1095,7 @@
       schedMixer: 'Spiral mixer <span class="note">warms the dough by ~6 °C</span>',
       schedMixerQty: '1st 10 min · 2nd 3 min',
       dstep1: '<h3>The single dough</h3><p>One flour, at the strength shown in the <strong>«The right flour»</strong> card, and the yeast dose shown by the calculator. In the <strong>spiral mixer</strong>: nearly all the water in the bowl <strong>at the temperature from the schedule</strong> with the yeast dissolved, flour rained in on <strong>1st speed</strong> (8–10 minutes), <strong>salt halfway through</strong>, then closing on <strong>2nd speed</strong> (2–3 minutes) with the last cold water in a stream. Ready when smooth, pulling away from the bowl and "crackling". Target: <strong>23–25 °C</strong> off the mixer.</p>',
-      dstep2: '<h3>Bulk — with fridge or same day</h3><p><strong>With fridge:</strong> covered mass at room temp for the bulk rest in the schedule, then into the refrigerator for the hours shown: the cold matures the dough and buys extensibility and flavour. The next day, out of the fridge for the time in the schedule before dividing.</p><p><strong>Same day:</strong> bulk proof at room temp for the hours in the schedule, covered, and it\'s already time to divide.</p>',
+      dstep2: '<h3>Bulk — with fridge or at room temperature</h3><p><strong>With fridge:</strong> covered mass at room temp for the bulk rest in the schedule, then into the refrigerator for the hours shown: the cold matures the dough and buys extensibility and flavour. The next day, out of the fridge for the time in the schedule before dividing.</p><p><strong>Room temperature:</strong> bulk proof for the hours in the schedule, covered, and then it\'s time to divide.</p>',
       dstep3: '<h3>Dividing and final proof</h3><p>Shape the balls with few movements and place them in oiled containers. Proof for the hours in the schedule: ready with the <strong>poke test</strong> — the dimple springs back slowly.</p>',
       dstep4: '<h3>Stretching and baking</h3><p>As always: semolina on the bench, thin centre, air pushed to the rim, blazing oven. Direct dough gives a more regular crumb than biga: tidy cornicione, gentler bite.</p>',
       day1: 'Day 1 · evening', theBiga: 'The biga',
