@@ -323,6 +323,18 @@
         </div>
       </div>
 
+      <div class="field only-diretta">
+        <label for="dirOre"><span data-i18n="dirOreLabel">Fermentazione totale</span> <span class="val" id="dirOreVal">24 h</span></label>
+        <div class="seg">
+          <button type="button" id="q8" aria-pressed="false">8 h</button>
+          <button type="button" id="q10" aria-pressed="false">10 h</button>
+          <button type="button" id="q16" aria-pressed="false">16 h</button>
+          <button type="button" id="q24" aria-pressed="true">24 h</button>
+        </div>
+        <input type="range" id="dirOre" min="12" max="48" step="1" value="24">
+        <div class="hint" data-i18n="dirOreHint">Il lievito si adatta alle ore: massimo 24 h in giornata, 48 h con frigo</div>
+      </div>
+
       <div class="duo">
         <div class="field">
           <label for="nPanetti" data-i18n="balls">Panetti</label>
@@ -447,6 +459,7 @@
         <div class="row" id="rowDPull" hidden><span class="what" data-i18n="dirPull">Fuori dal frigo prima dello staglio <span class="note">si intiepidisce</span></span><span class="dots"></span><span class="qty" id="sDPull">~2½ h</span></div>
         <div class="row" id="rowDBulkTA" hidden><span class="what" data-i18n="dirBulkTA">Puntata a T.A. <span class="note">massa coperta, poi staglio</span></span><span class="dots"></span><span class="qty" id="sDBulkTA">~4 h</span></div>
         <div class="row"><span class="what" data-i18n="schedWater">Acqua della chiusura <span class="note">per impasto a 23–25 °C a fine impastata</span></span><span class="dots"></span><span class="qty" id="sWater">~17 °C</span></div>
+        <div class="row"><span class="what" data-i18n="schedDough">Impasto a fine impastata <span class="note">misuralo con un termometro a sonda</span></span><span class="dots"></span><span class="qty">23–25 °C</span></div>
         <div class="row"><span class="what" data-i18n="schedAppr">Appretto dei panetti <span class="note">test del dito: la fossetta risale piano</span></span><span class="dots"></span><span class="qty" id="sAppr">~3 h</span></div>
       </div>
       <div class="rcard">
@@ -454,6 +467,10 @@
         <div class="field">
           <label for="bakeAt" data-i18n="calLabel">Inforno il…</label>
           <input type="datetime-local" id="bakeAt">
+        </div>
+        <div class="field only-diretta">
+          <label for="mixAt" data-i18n="dirMixAt">Inizio (impasto) il…</label>
+          <input type="datetime-local" id="mixAt">
         </div>
         <p class="calwarn" id="calWarn" hidden data-i18n="calPast">⚠️ Per infornare a questa ora avresti dovuto già iniziare: scegli un momento più avanti.</p>
         <table class="caltab">
@@ -699,13 +716,31 @@
   }
 
   // --- Metodo diretto ---
-  // Dose di lievito fresco (frazione della farina): fissa col frigo, dipende
-  // dalla temperatura di casa nel percorso in giornata (~8 h totali a 21 °C).
+  // Ore di fermentazione totale valide per percorso (in giornata: max verace
+  // 24 h; con frigo: fino a 48 h per una farina W 260–290).
+  function dirOreClamp(p) {
+    var frigo = p.frigoDiretta !== false;
+    var ore = p.dirOre == null ? (frigo ? 24 : 8) : p.dirOre;
+    return Math.min(frigo ? 48 : 24, Math.max(frigo ? 12 : 6, ore));
+  }
+
+  // Dose di lievito fresco (frazione della farina), tarata sulla verace:
+  // ~0.2% per 8 h a 21 °C; dimezza al raddoppiare delle ore equivalenti a T.A.
+  // Le ore di frigo contano poco: la velocità dimezza ogni ~6 °C in meno.
   function lievDirettaPct(p) {
-    if (p.frigoDiretta !== false) return 0.003; // 0.3% fresco, percorso con frigo
     var tA = p.tAmb == null ? 21 : p.tAmb;
-    var base = 0.002 * Math.pow(2, (21 - tA) / 6); // 0.2% a 21 °C
-    return Math.min(0.005, Math.max(0.0008, base));
+    var tF = p.tFrigo == null ? 4 : p.tFrigo;
+    function clamp(v, lo, hi) { return Math.min(hi, Math.max(lo, v)); }
+    var frigo = p.frigoDiretta !== false;
+    var ore = dirOreClamp(p);
+    var eqH = ore;
+    if (frigo) {
+      var apprettoH = clamp(Math.round(3 * Math.pow(2, (21 - tA) / 6) * 2) / 2, 1.5, 5);
+      var pullOutH = clamp(Math.round((2 + (6 - tF) * 0.15 + (23 - tA) * 0.1) * 2) / 2, 1.5, 3);
+      var fridgeH = Math.max(4, ore - 1 - pullOutH - apprettoH);
+      eqH = (ore - fridgeH) + fridgeH * Math.pow(2, (tF - tA) / 6);
+    }
+    return clamp(0.002 * (8 / eqH) * Math.pow(2, (21 - tA) / 6), 0.0005, 0.005);
   }
 
   function calcDiretta(p) {
@@ -725,20 +760,22 @@
     };
   }
 
-  // Programma della diretta. Percorso frigo: puntata breve a T.A., maturazione
-  // in massa al freddo, poi fuori a intiepidire. Percorso T.A.: puntata lunga.
+  // Programma della diretta, guidato dalle ore totali scelte: il calendario
+  // parte esattamente a (infornata − ore). Percorso frigo: puntata breve a
+  // T.A., maturazione in massa al freddo, poi fuori a intiepidire.
   function calcScheduleDiretta(p, r) {
     var tA = p.tAmb == null ? 21 : p.tAmb;
     var tF = p.tFrigo == null ? 4 : p.tFrigo;
     function clamp(v, lo, hi) { return Math.min(hi, Math.max(lo, v)); }
     var frigo = p.frigoDiretta !== false;
-    var bulkMin = 60; // puntata prima del frigo
-    var bulkH = clamp(Math.round(4 * Math.pow(2, (21 - tA) / 6) * 2) / 2, 2, 8); // puntata in giornata
-    var fridgeH = clamp(Math.round(16 + (6 - tF) * 2), 14, 24);
-    var pullOutH = clamp(Math.round((2 + (6 - tF) * 0.15 + (23 - tA) * 0.1) * 2) / 2, 1.5, 3);
-    var waterC = clamp(Math.round(((24 - 6) * (r.farinaTot + r.acqua) - r.farinaTot * tA) / Math.max(r.acqua, 1)), 5, 28);
+    var ore = dirOreClamp(p);
     var apprettoH = clamp(Math.round(3 * Math.pow(2, (21 - tA) / 6) * 2) / 2, 1.5, 5);
-    return { frigo: frigo, bulkMin: bulkMin, bulkH: bulkH, fridgeH: fridgeH, pullOutH: pullOutH, waterC: waterC, apprettoH: apprettoH };
+    var pullOutH = clamp(Math.round((2 + (6 - tF) * 0.15 + (23 - tA) * 0.1) * 2) / 2, 1.5, 3);
+    var bulkMin = 60; // puntata prima del frigo
+    var fridgeH = Math.max(4, ore - 1 - pullOutH - apprettoH);
+    var bulkH = Math.max(1, ore - apprettoH); // puntata in giornata
+    var waterC = clamp(Math.round(((24 - 6) * (r.farinaTot + r.acqua) - r.farinaTot * tA) / Math.max(r.acqua, 1)), 5, 28);
+    return { frigo: frigo, ore: ore, bulkMin: bulkMin, bulkH: bulkH, fridgeH: fridgeH, pullOutH: pullOutH, waterC: waterC, apprettoH: apprettoH };
   }
 
   function calcTimelineDiretta(bakeMs, s) {
@@ -778,7 +815,8 @@
     ['lc', 'lievChiusuraPct', 0, 2],
     ['mg', 'maltoGkg', 1, 30],
     ['ta', 'tAmb', 15, 35],
-    ['tf', 'tFrigo', 1, 10]
+    ['tf', 'tFrigo', 1, 10],
+    ['do', 'dirOre', 6, 48]
   ];
 
   function paramsToQuery(p) {
@@ -862,7 +900,7 @@
       calBiga: 'Prepara la biga', calBigaN: 'a gnocchetti · poi ~{x} min a T.A.',
       calFridgeIn: 'Biga in frigorifero', calFridgeInN: 'panno umido sopra · ~{x} h',
       calFridgeOut: 'Biga fuori dal frigo', calFridgeOutN: 'spezzata a pezzi in un contenitore largo',
-      calMix: 'Chiusura impasto', calMixN: 'impastatrice 12–15 min · acqua a ~{x} °C · sale subito',
+      calMix: 'Chiusura impasto', calMixN: 'impastatrice 12–15 min · acqua a ~{x} °C · impasto a 23–25 °C · sale subito',
       calBalls: 'Staglio: forma i panetti', calBallsN: 'contenitori unti · appretto ~{x} h · test del dito',
       calBake: 'Inforna!', calBakeN: 'platea rovente · 60–90 secondi',
       metodo: 'Metodo', metodoBiga: 'Con Biga', metodoDiretta: 'Diretta',
@@ -875,8 +913,12 @@
       dirFridge: 'Maturazione in frigo <span class="note">in massa, coperta</span>',
       dirPull: 'Fuori dal frigo prima dello staglio <span class="note">si intiepidisce</span>',
       dirBulkTA: 'Puntata a T.A. <span class="note">massa coperta, poi staglio</span>',
-      dirMix: 'Impasta (metodo diretto)', dirMixN: 'acqua a ~{x} °C · sale a metà impastata',
+      dirMix: 'Impasta (metodo diretto)', dirMixN: 'acqua a ~{x} °C · impasto a 23–25 °C · sale a metà impastata',
       dirFridgeOutN: 'massa coperta, a intiepidire',
+      dirOreLabel: 'Fermentazione totale',
+      dirOreHint: 'Il lievito si adatta alle ore: massimo 24 h in giornata, 48 h con frigo',
+      dirMixAt: 'Inizio (impasto) il…',
+      schedDough: 'Impasto a fine impastata <span class="note">misuralo con un termometro a sonda</span>',
       dstep1: '<h3>Impasto unico</h3><p>Una sola farina (<strong>W 260–290</strong>) e il lievito indicato dal calcolatore. Sciogli il lievito nell\'acqua <strong>alla temperatura del programma</strong>, versa quasi tutta l\'acqua sulla farina, poi il <strong>sale a metà impastata</strong> e il resto dell\'acqua a filo. Servono <strong>12–15 minuti</strong>: pronto quando è liscio e si stacca dalla vasca. Target: <strong>23–25 °C</strong> a fine impastata.</p>',
       dstep2: '<h3>Puntata — con frigo o in giornata</h3><p><strong>Con frigo:</strong> massa coperta a T.A. per la puntata del programma, poi in frigorifero per le ore indicate: il freddo matura l\'impasto e regala estensibilità e sapore. Il giorno dopo, fuori dal frigo per il tempo del programma prima dello staglio.</p><p><strong>In giornata:</strong> puntata a T.A. per le ore del programma, massa coperta, ed è già ora di staglio.</p>',
       dstep3: '<h3>Staglio e appretto</h3><p>Forma i panetti con pochi movimenti e mettili nei contenitori unti. Appretto per le ore del programma: pronto col <strong>test del dito</strong> — la fossetta risale piano.</p>',
@@ -959,7 +1001,7 @@
       calBiga: 'Make the biga', calBigaN: 'into lumps · then ~{x} min at room temp',
       calFridgeIn: 'Biga into the fridge', calFridgeInN: 'damp cloth on top · ~{x} h',
       calFridgeOut: 'Biga out of the fridge', calFridgeOutN: 'broken into chunks in a wide container',
-      calMix: 'Final mix', calMixN: 'mixer 12–15 min · water at ~{x} °C · salt right away',
+      calMix: 'Final mix', calMixN: 'mixer 12–15 min · water at ~{x} °C · dough at 23–25 °C · salt right away',
       calBalls: 'Divide: shape the balls', calBallsN: 'oiled containers · proof ~{x} h · poke test',
       calBake: 'Bake!', calBakeN: 'blazing floor · 60–90 seconds',
       metodo: 'Method', metodoBiga: 'With Biga', metodoDiretta: 'Direct',
@@ -972,8 +1014,12 @@
       dirFridge: 'Cold maturation <span class="note">in bulk, covered</span>',
       dirPull: 'Out of the fridge before dividing <span class="note">takes the chill off</span>',
       dirBulkTA: 'Bulk proof at room temp <span class="note">covered, then divide</span>',
-      dirMix: 'Mix the dough (direct)', dirMixN: 'water at ~{x} °C · salt halfway through',
+      dirMix: 'Mix the dough (direct)', dirMixN: 'water at ~{x} °C · dough at 23–25 °C · salt halfway through',
       dirFridgeOutN: 'covered mass, warming up',
+      dirOreLabel: 'Total fermentation',
+      dirOreHint: 'The yeast adapts to the hours: max 24 h same-day, 48 h with the fridge',
+      dirMixAt: 'I start (mix) on…',
+      schedDough: 'Dough off the mixer <span class="note">measure it with a probe thermometer</span>',
       dstep1: '<h3>The single dough</h3><p>One flour (<strong>W 260–290</strong>) and the yeast dose shown by the calculator. Dissolve the yeast in water <strong>at the temperature from the schedule</strong>, pour most of the water over the flour, then the <strong>salt halfway through</strong> and the rest of the water little by little. It takes <strong>12–15 minutes</strong>: ready when smooth and pulling away from the bowl. Target: <strong>23–25 °C</strong> off the mixer.</p>',
       dstep2: '<h3>Bulk — with fridge or same day</h3><p><strong>With fridge:</strong> covered mass at room temp for the bulk rest in the schedule, then into the refrigerator for the hours shown: the cold matures the dough and buys extensibility and flavour. The next day, out of the fridge for the time in the schedule before dividing.</p><p><strong>Same day:</strong> bulk proof at room temp for the hours in the schedule, covered, and it\'s already time to divide.</p>',
       dstep3: '<h3>Dividing and final proof</h3><p>Shape the balls with few movements and place them in oiled containers. Proof for the hours in the schedule: ready with the <strong>poke test</strong> — the dimple springs back slowly.</p>',
@@ -1093,12 +1139,17 @@
       tAmb: Math.min(35, Math.max(15, +$('tAmb').value || 21)),
       tFrigo: Math.min(10, Math.max(1, +$('tFrigo').value || 4)),
       metodo: state.metodo,
-      frigoDiretta: state.dirFrigo
+      frigoDiretta: state.dirFrigo,
+      dirOre: Math.min(48, Math.max(6, Math.round(+$('dirOre').value || 24)))
     };
   }
 
   function g(x) { return Math.round(x) + ' g'; }
   function hMezze(x) { return x % 1 === 0.5 ? Math.floor(x) + '½' : String(x); }
+  function isoLocal(d) {
+    function p2(n) { return (n < 10 ? '0' : '') + n; }
+    return d.getFullYear() + '-' + p2(d.getMonth() + 1) + '-' + p2(d.getDate()) + 'T' + p2(d.getHours()) + ':' + p2(d.getMinutes());
+  }
   function g1(x) { return (Math.round(x * 10) / 10).toLocaleString(state.lang === 'it' ? 'it-IT' : 'en-US') + ' g'; }
 
   function render() {
@@ -1157,10 +1208,16 @@
     $('rowDBulkTA').hidden = !(diretta && !s.frigo);
     if (diretta && s.frigo) {
       $('sDBulkCold').textContent = '~' + s.bulkMin + ' min';
-      $('sDFridge').textContent = '~' + s.fridgeH + ' h';
+      $('sDFridge').textContent = '~' + hMezze(s.fridgeH) + ' h';
       $('sDPull').textContent = '~' + hMezze(s.pullOutH) + ' h';
     }
     if (diretta && !s.frigo) $('sDBulkTA').textContent = '~' + hMezze(s.bulkH) + ' h';
+    if (diretta) {
+      $('dirOreVal').textContent = s.ore + ' h';
+      [['q8', 8, false], ['q10', 10, false], ['q16', 16, true], ['q24', 24, true]].forEach(function (q) {
+        $(q[0]).setAttribute('aria-pressed', s.ore === q[1] && s.frigo === q[2]);
+      });
+    }
     $('sWater').textContent = '~' + s.waterC + ' °C';
     $('sAppr').textContent = '~' + hMezze(s.apprettoH) + ' h';
     var wNote = document.getElementById('wNote');
@@ -1189,6 +1246,7 @@
         return '<tr><td class="when">' + when + '</td><td>' + t(step.k) + '<span class="note">' + noteVals[step.k] + '</span></td></tr>';
       }).join('');
       $('calWarn').hidden = tl[0].at >= Date.now();
+      if (diretta && document.activeElement !== $('mixAt')) $('mixAt').value = isoLocal(new Date(tl[0].at));
     }
   }
 
@@ -1220,12 +1278,24 @@
       el.innerHTML = t(pair[1]);
     });
   }
-  function setMetodo(m) { setMetodoState(m); onInput(); }
+  function setMetodo(m) {
+    var next = m === 'diretta' ? 'diretta' : 'biga';
+    var changed = state.metodo !== next;
+    setMetodoState(m);
+    // idratazione di default del metodo: 63% diretta, 70% biga
+    if (changed) $('idr').value = next === 'diretta' ? 63 : 70;
+    onInput();
+  }
 
   function setDirRouteState(frigo) {
     state.dirFrigo = !!frigo;
     $('dFrigo').setAttribute('aria-pressed', state.dirFrigo);
     $('dTA').setAttribute('aria-pressed', !state.dirFrigo);
+    var o = $('dirOre');
+    o.min = state.dirFrigo ? 12 : 6;
+    o.max = state.dirFrigo ? 48 : 24;
+    if (+o.value < +o.min) o.value = o.min;
+    if (+o.value > +o.max) o.value = o.max;
   }
   function setDirRoute(frigo) { setDirRouteState(frigo); onInput(); }
 
@@ -1258,6 +1328,10 @@
     }
     if (p.metodo != null) setMetodoState(p.metodo);
     if (p.frigoDiretta != null) setDirRouteState(p.frigoDiretta);
+    if (p.dirOre != null) {
+      var o = $('dirOre');
+      o.value = Math.min(+o.max, Math.max(+o.min, p.dirOre));
+    }
     onInput();
   }
 
@@ -1461,6 +1535,24 @@
   $('mDiretta').addEventListener('click', function () { setMetodo('diretta'); });
   $('dFrigo').addEventListener('click', function () { setDirRoute(true); });
   $('dTA').addEventListener('click', function () { setDirRoute(false); });
+  [['q8', 8, false], ['q10', 10, false], ['q16', 16, true], ['q24', 24, true]].forEach(function (q) {
+    $(q[0]).addEventListener('click', function () {
+      setDirRouteState(q[2]);
+      $('dirOre').value = q[1];
+      onInput();
+    });
+  });
+  $('dirOre').addEventListener('input', onInput);
+  $('mixAt').addEventListener('change', function () {
+    var b = new Date($('bakeAt').value).getTime();
+    var m = new Date(this.value).getTime();
+    if (!isFinite(b) || !isFinite(m) || m >= b) { render(); return; }
+    var ore = Math.round((b - m) / 3600000);
+    setDirRouteState(ore >= 12);
+    var o = $('dirOre');
+    o.value = Math.min(+o.max, Math.max(+o.min, ore));
+    onInput();
+  });
 
   ['nPanetti', 'pesoPanetto', 'idr', 'bigaPct', 'sale', 'olio', 'lievBiga', 'lievChiusura', 'maltoGkg', 'tAmb', 'tFrigo'].forEach(function (id) {
     $(id).addEventListener('input', onInput);
@@ -1484,7 +1576,7 @@
       n: 6, peso: 270, idr: 70, bigaPct: 50, saleGkg: 20, olioGkg: 0,
       lievBigaPct: 1, lievChiusuraPct: 0.5, secco: false,
       germe: false, malto: false, maltoGkg: 5, tAmb: 21, tFrigo: 4,
-      metodo: 'biga', frigoDiretta: true
+      metodo: 'biga', frigoDiretta: true, dirOre: 24
     });
   });
 

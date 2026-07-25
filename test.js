@@ -108,46 +108,64 @@ eq('sched default = come 21/4', s.waterC, 17);
   eq('timeline: ordine crescente', tl.every((x, i) => i === 0 || x.at > tl[i - 1].at), true);
 }
 
-// --- DIRETTA: dose di lievito per percorso e temperatura ---
-eq('diretta lievito con frigo = 0.3%', lievDirettaPct({ frigoDiretta: true }), 0.003);
-eq('diretta lievito T.A. 21° = 0.2%', lievDirettaPct({ frigoDiretta: false, tAmb: 21 }), 0.002);
-eq('diretta lievito T.A. 27° = 0.1%', lievDirettaPct({ frigoDiretta: false, tAmb: 27 }), 0.001);
+// --- DIRETTA: dose di lievito guidata dalle ore (benchmark verace) ---
+// Con frigo 24 h a 21/4: frigo = 24 - 1 - 2.5 - 3 = 17.5 h; ore equivalenti
+// a T.A. = 6.5 + 17.5 * 2^((4-21)/6); dose = 0.2% * 8 / eq.
+{
+  const eq24 = 6.5 + 17.5 * Math.pow(2, (4 - 21) / 6);
+  eq('diretta lievito frigo 24 h', lievDirettaPct({ frigoDiretta: true, dirOre: 24, tAmb: 21, tFrigo: 4 }), 0.002 * 8 / eq24, 1e-6);
+}
+eq('diretta lievito T.A. 8 h = 0.2%', lievDirettaPct({ frigoDiretta: false, dirOre: 8, tAmb: 21 }), 0.002, 1e-6);
+eq('diretta lievito T.A. 10 h = 0.16%', lievDirettaPct({ frigoDiretta: false, dirOre: 10, tAmb: 21 }), 0.0016, 1e-6);
+eq('diretta lievito T.A. 8 h a 27° = 0.1%', lievDirettaPct({ frigoDiretta: false, dirOre: 8, tAmb: 27 }), 0.001, 1e-6);
+eq('diretta lievito: tetto 0.5%', lievDirettaPct({ frigoDiretta: false, dirOre: 6, tAmb: 15 }), 0.005, 1e-6);
+eq('diretta lievito: ore clampate (T.A. max 24)', lievDirettaPct({ frigoDiretta: false, dirOre: 99, tAmb: 21 }), lievDirettaPct({ frigoDiretta: false, dirOre: 24, tAmb: 21 }), 1e-9);
 
-// --- DIRETTA: impasto di riferimento (1 kg farina, 65%, sale 28 g/kg) ---
-const dbase = { n: 1, peso: 1681, idr: 65, saleGkg: 28, olioGkg: 0, secco: false, germe: false, malto: false, maltoGkg: 5, frigoDiretta: true, tAmb: 21, tFrigo: 4 };
+// --- DIRETTA: impasto di riferimento (65%, sale 28 g/kg, frigo 24 h) ---
+const dbase = { n: 1, peso: 1681, idr: 65, saleGkg: 28, olioGkg: 0, secco: false, germe: false, malto: false, maltoGkg: 5, frigoDiretta: true, dirOre: 24, tAmb: 21, tFrigo: 4 };
 const rd = calcDiretta(dbase);
-eq('diretta: farina = 1000', rd.farinaTot, 1000);
-eq('diretta: acqua = 650', rd.acqua, 650);
-eq('diretta: sale = 28', rd.sale, 28);
-eq('diretta: lievito = 3', rd.liev, 3);
-eq('diretta: impasto = 1681', rd.impasto, 1681);
+{
+  const pct = lievDirettaPct(dbase);
+  const perFlour = 1 + 0.65 + 0.028 + pct;
+  eq('diretta: farina coerente', rd.farinaTot, 1681 / perFlour, 0.01);
+  eq('diretta: acqua = 65% farina', rd.acqua, rd.farinaTot * 0.65, 0.01);
+  eq('diretta: sale = 2.8% farina', rd.sale, rd.farinaTot * 0.028, 0.01);
+  eq('diretta: lievito = dose calcolata', rd.liev, rd.farinaTot * pct, 0.001);
+  eq('diretta: impasto = 1681', rd.impasto, 1681, 0.001);
+}
 
-// --- DIRETTA: programma 21/4, percorso con frigo ---
+// --- DIRETTA: programma 21/4, frigo 24 h — il totale torna a 24 ---
 const sd = calcScheduleDiretta(dbase, rd);
+eq('diretta: ore totali = 24', sd.ore, 24);
 eq('diretta: puntata pre-frigo = 60 min', sd.bulkMin, 60);
-eq('diretta: frigo = 20 h', sd.fridgeH, 20);
+eq('diretta: frigo = 17.5 h', sd.fridgeH, 17.5);
 eq('diretta: fuori dal frigo = 2.5 h', sd.pullOutH, 2.5);
 eq('diretta: appretto = 3 h', sd.apprettoH, 3);
 eq('diretta: acqua = 13 °C', sd.waterC, 13);
+eq('diretta: 1 + 17.5 + 2.5 + 3 = 24', sd.bulkMin / 60 + sd.fridgeH + sd.pullOutH + sd.apprettoH, 24);
 
-// --- DIRETTA: calendario nei due percorsi ---
+// --- DIRETTA: calendario — l'inizio è esattamente (infornata - ore) ---
 {
-  const H = 3600000, MIN = 60000, bake = 1000000000000;
+  const H = 3600000, bake = 1000000000000;
   const tl = calcTimelineDiretta(bake, sd);
   eq('diretta timeline frigo: 5 tappe', tl.length, 5);
   eq('diretta timeline: staglio = -3 h', tl[3].at, bake - 3 * H);
-  eq('diretta timeline: impasta = -25.5 h - 60 min', tl[0].at, bake - 3 * H - 2.5 * H - 20 * H - 60 * MIN);
-  const sTA = calcScheduleDiretta({ ...dbase, frigoDiretta: false }, rd);
+  eq('diretta timeline frigo: inizio = -24 h', tl[0].at, bake - 24 * H);
+  const sTA = calcScheduleDiretta({ ...dbase, frigoDiretta: false, dirOre: 8 }, rd);
   const tl2 = calcTimelineDiretta(bake, sTA);
   eq('diretta timeline T.A.: 3 tappe', tl2.length, 3);
-  eq('diretta timeline T.A.: impasta = -7 h', tl2[0].at, bake - 7 * H);
+  eq('diretta timeline T.A. 8 h: inizio = -8 h', tl2[0].at, bake - 8 * H);
+  const s10 = calcScheduleDiretta({ ...dbase, frigoDiretta: false, dirOre: 10 }, rd);
+  eq('diretta timeline T.A. 10 h: inizio = -10 h', calcTimelineDiretta(bake, s10)[0].at, bake - 10 * H);
 }
 
 // --- CODEC: metodo e percorso frigo ---
 {
-  const backD = queryToParams(paramsToQuery({ n: 6, peso: 270, metodo: 'diretta', frigoDiretta: false }));
+  const backD = queryToParams(paramsToQuery({ n: 6, peso: 270, metodo: 'diretta', frigoDiretta: false, dirOre: 10 }));
   eq('codec metodo = diretta', backD.metodo, 'diretta');
   eq('codec frigoDiretta = false', backD.frigoDiretta, false);
+  eq('codec dirOre = 10', backD.dirOre, 10);
+  eq('codec dirOre clamp 99 -> 48', queryToParams('do=99').dirOre, 48);
   const backB = queryToParams(paramsToQuery({ n: 6, peso: 270 }));
   eq('codec metodo default = biga', backB.metodo, 'biga');
 }
