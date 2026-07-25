@@ -121,6 +121,9 @@
     border: 1px solid var(--line); border-radius: 7px; background: var(--field); color: var(--ink);
   }
   .field input[type="range"] { width: 100%; accent-color: var(--accent); }
+  .flourrow { opacity: .5; }
+  .flourrow.fon { opacity: 1; }
+  .flourrow.fon .qty { color: var(--accent); }
   body:not(.mode-diretta) .only-diretta { display: none !important; }
   body.mode-diretta .only-biga { display: none !important; }
   body.mode-diretta .cards { grid-template-columns: 1fr; }
@@ -434,7 +437,7 @@
           <p class="day" id="cardMixDay" data-i18n="day2">Giorno 2 · chiusura</p>
           <h3 id="cardMixTitle" data-i18n="finalDough">L'impasto finale</h3>
           <div class="row only-biga"><span class="what" data-i18n="allBiga">Tutta la biga</span><span class="dots"></span><span class="qty" id="rBigaTot">755 g</span></div>
-          <div class="row"><span class="what only-biga" data-i18n="weakFlour">Farina <span class="note">anche debole, W ~290</span></span><span class="what only-diretta" data-i18n="dirFlour">Farina <span class="note">W 260–290</span></span><span class="dots"></span><span class="qty" id="rChiFarina">500 g</span></div>
+          <div class="row"><span class="what only-biga" data-i18n="weakFlour">Farina <span class="note">anche debole, W ~290</span></span><span class="what only-diretta" data-i18n="dirFlour">Farina <span class="note" id="dirWNote">W 260–290</span></span><span class="dots"></span><span class="qty" id="rChiFarina">500 g</span></div>
           <div class="row"><span class="what" data-i18n="coldWater2">Acqua <span class="note" id="wNote">~17 °C</span></span><span class="dots"></span><span class="qty" id="rChiAcqua">450 g</span></div>
           <div class="row"><span class="what" data-i18n="salt">Sale</span><span class="dots"></span><span class="qty" id="rSale">20 g</span></div>
           <div class="row"><span class="what"><span data-i18n="yeast2">Lievito</span> <span class="note" id="rChiLievNote">fresco</span></span><span class="dots"></span><span class="qty" id="rChiLiev">5 g</span></div>
@@ -461,6 +464,13 @@
         <div class="row"><span class="what" data-i18n="schedDough">Impasto a fine impastata <span class="note">misuralo con un termometro a sonda</span></span><span class="dots"></span><span class="qty">23–25 °C</span></div>
         <div class="row"><span class="what" data-i18n="schedMixer">Impastatrice a spirale <span class="note">scalda l'impasto di ~6 °C</span></span><span class="dots"></span><span class="qty" data-i18n="schedMixerQty">1ª 10 min · 2ª 3 min</span></div>
         <div class="row"><span class="what" data-i18n="schedAppr">Appretto dei panetti <span class="note">test del dito: la fossetta risale piano</span></span><span class="dots"></span><span class="qty" id="sAppr">~3 h</span></div>
+      </div>
+      <div class="rcard only-diretta">
+        <p class="day" data-i18n="flourTitle">La farina giusta · per le tue ore</p>
+        <div class="row"><span class="what" data-i18n="flourGoal">Obiettivo per il tuo programma <span class="note">più ore a T.A. = più forza</span></span><span class="dots"></span><span class="qty" id="fGoal">W 260–290</span></div>
+        <div class="row flourrow fon" id="fT1"><span class="what" data-i18n="flourT1">Farina classica <span class="note">es. Caputo Nuvola o Pizzeria</span></span><span class="dots"></span><span class="qty">W 260–290</span></div>
+        <div class="row flourrow" id="fT2"><span class="what" data-i18n="flourT2">Taglio 50/50 <span class="note">es. Nuvola + Nuvola Super</span></span><span class="dots"></span><span class="qty">W ~300–320</span></div>
+        <div class="row flourrow" id="fT3"><span class="what" data-i18n="flourT3">Farina forte <span class="note">es. Nuvola Super, o taglio con Manitoba</span></span><span class="dots"></span><span class="qty">W 320–340</span></div>
       </div>
       <div class="rcard">
         <p class="day" data-i18n="calTitle">Il calendario · dimmi quando vuoi infornare</p>
@@ -602,7 +612,7 @@
       <div class="num">1</div>
       <div data-i18n="dstep1">
         <h3>Impasto unico</h3>
-        <p>Una sola farina (<strong>W 260–290</strong>) e il lievito indicato dal calcolatore. Nella <strong>spirale</strong>: quasi tutta l'acqua in vasca <strong>alla temperatura del programma</strong> con il lievito sciolto, farina a pioggia in <strong>1ª velocità</strong> (8–10 minuti), <strong>sale a metà impastata</strong>, poi chiusura in <strong>2ª velocità</strong> (2–3 minuti) con l'ultima acqua fredda a filo. Pronto quando è liscio, si stacca dalla vasca e "scoppietta". Target: <strong>23–25 °C</strong> a fine impastata.</p>
+        <p>Una sola farina, con la forza indicata dal riquadro <strong>«La farina giusta»</strong>, e il lievito indicato dal calcolatore. Nella <strong>spirale</strong>: quasi tutta l'acqua in vasca <strong>alla temperatura del programma</strong> con il lievito sciolto, farina a pioggia in <strong>1ª velocità</strong> (8–10 minuti), <strong>sale a metà impastata</strong>, poi chiusura in <strong>2ª velocità</strong> (2–3 minuti) con l'ultima acqua fredda a filo. Pronto quando è liscio, si stacca dalla vasca e "scoppietta". Target: <strong>23–25 °C</strong> a fine impastata.</p>
       </div>
     </div>
     <div class="step">
@@ -750,23 +760,39 @@
     return Math.min(frigo ? 48 : 24, Math.max(frigo ? 12 : 6, ore));
   }
 
-  // Dose di lievito fresco (frazione della farina), tarata sulla verace:
-  // ~0.2% per 8 h a 21 °C; dimezza al raddoppiare delle ore equivalenti a T.A.
-  // Le ore di frigo contano poco: la velocità dimezza ogni ~6 °C in meno.
-  function lievDirettaPct(p) {
+  // Ore "equivalenti a temperatura ambiente" del percorso scelto: le ore di
+  // frigo pesano 2^((tF−tA)/6), perché il freddo dimezza la velocità ogni ~6 °C.
+  function dirEqOre(p) {
     var tA = p.tAmb == null ? 21 : p.tAmb;
     var tF = p.tFrigo == null ? 4 : p.tFrigo;
     function clamp(v, lo, hi) { return Math.min(hi, Math.max(lo, v)); }
     var frigo = p.frigoDiretta !== false;
     var ore = dirOreClamp(p);
-    var eqH = ore;
-    if (frigo) {
-      var apprettoH = clamp(Math.round(3 * Math.pow(2, (21 - tA) / 6) * 2) / 2, 1.5, 5);
-      var pullOutH = clamp(Math.round((2 + (6 - tF) * 0.15 + (23 - tA) * 0.1) * 2) / 2, 1.5, 3);
-      var fridgeH = Math.max(4, ore - 1 - pullOutH - apprettoH);
-      eqH = (ore - fridgeH) + fridgeH * Math.pow(2, (tF - tA) / 6);
-    }
-    return clamp(0.002 * (8 / eqH) * Math.pow(2, (21 - tA) / 6), 0.0005, 0.005);
+    if (!frigo) return ore;
+    var apprettoH = clamp(Math.round(3 * Math.pow(2, (21 - tA) / 6) * 2) / 2, 1.5, 5);
+    var pullOutH = clamp(Math.round((2 + (6 - tF) * 0.15 + (23 - tA) * 0.1) * 2) / 2, 1.5, 3);
+    var fridgeH = Math.max(4, ore - 1 - pullOutH - apprettoH);
+    return (ore - fridgeH) + fridgeH * Math.pow(2, (tF - tA) / 6);
+  }
+
+  // Dose di lievito fresco (frazione della farina), tarata sulla verace:
+  // ~0.2% per 8 h a 21 °C; dimezza al raddoppiare delle ore equivalenti a T.A.
+  function lievDirettaPct(p) {
+    var tA = p.tAmb == null ? 21 : p.tAmb;
+    var eqH = dirEqOre(p);
+    var pct = 0.002 * (8 / eqH) * Math.pow(2, (21 - tA) / 6);
+    return Math.min(0.005, Math.max(0.0005, pct));
+  }
+
+  // Forza della farina richiesta: la maturazione segue gli enzimi, che come il
+  // lievito accelerano col caldo — ore equivalenti normalizzate a 21 °C.
+  // Fino a 12 h: farina classica; 12–18 h: taglio; oltre: farina forte.
+  function dirWTier(p) {
+    var tA = p.tAmb == null ? 21 : p.tAmb;
+    var eq21 = dirEqOre(p) * Math.pow(2, (tA - 21) / 6);
+    if (eq21 <= 12) return { tier: 1, wMin: 260, wMax: 290 };
+    if (eq21 <= 18) return { tier: 2, wMin: 300, wMax: 320 };
+    return { tier: 3, wMin: 320, wMax: 340 };
   }
 
   function calcDiretta(p) {
@@ -933,7 +959,12 @@
       h1Dir: 'Pizza Napoletana <em>Diretta</em>',
       subDir: 'La variante a metodo diretto della mia pizza: un solo impasto, un\'unica farina, con o senza frigo — acqua e tempi adattati alle temperature di casa tua.',
       dirDay: 'Metodo diretto', dirDough: "L'impasto unico",
-      dirFlour: 'Farina <span class="note">W 260–290</span>',
+      dirFlour: 'Farina <span class="note" id="dirWNote">W 260–290</span>',
+      flourTitle: 'La farina giusta · per le tue ore',
+      flourGoal: 'Obiettivo per il tuo programma <span class="note">più ore a T.A. = più forza</span>',
+      flourT1: 'Farina classica <span class="note">es. Caputo Nuvola o Pizzeria</span>',
+      flourT2: 'Taglio 50/50 <span class="note">es. Nuvola + Nuvola Super</span>',
+      flourT3: 'Farina forte <span class="note">es. Nuvola Super, o taglio con Manitoba</span>',
       dirBulkCold: 'Puntata a T.A. prima del frigo <span class="note">massa coperta</span>',
       dirFridge: 'Maturazione in frigo <span class="note">in massa, coperta</span>',
       dirPull: 'Fuori dal frigo prima dello staglio <span class="note">si intiepidisce</span>',
@@ -950,7 +981,7 @@
       schedDough: 'Impasto a fine impastata <span class="note">misuralo con un termometro a sonda</span>',
       schedMixer: 'Impastatrice a spirale <span class="note">scalda l\'impasto di ~6 °C</span>',
       schedMixerQty: '1ª 10 min · 2ª 3 min',
-      dstep1: '<h3>Impasto unico</h3><p>Una sola farina (<strong>W 260–290</strong>) e il lievito indicato dal calcolatore. Nella <strong>spirale</strong>: quasi tutta l\'acqua in vasca <strong>alla temperatura del programma</strong> con il lievito sciolto, farina a pioggia in <strong>1ª velocità</strong> (8–10 minuti), <strong>sale a metà impastata</strong>, poi chiusura in <strong>2ª velocità</strong> (2–3 minuti) con l\'ultima acqua fredda a filo. Pronto quando è liscio, si stacca dalla vasca e "scoppietta". Target: <strong>23–25 °C</strong> a fine impastata.</p>',
+      dstep1: '<h3>Impasto unico</h3><p>Una sola farina, con la forza indicata dal riquadro <strong>«La farina giusta»</strong>, e il lievito indicato dal calcolatore. Nella <strong>spirale</strong>: quasi tutta l\'acqua in vasca <strong>alla temperatura del programma</strong> con il lievito sciolto, farina a pioggia in <strong>1ª velocità</strong> (8–10 minuti), <strong>sale a metà impastata</strong>, poi chiusura in <strong>2ª velocità</strong> (2–3 minuti) con l\'ultima acqua fredda a filo. Pronto quando è liscio, si stacca dalla vasca e "scoppietta". Target: <strong>23–25 °C</strong> a fine impastata.</p>',
       dstep2: '<h3>Puntata — con frigo o in giornata</h3><p><strong>Con frigo:</strong> massa coperta a T.A. per la puntata del programma, poi in frigorifero per le ore indicate: il freddo matura l\'impasto e regala estensibilità e sapore. Il giorno dopo, fuori dal frigo per il tempo del programma prima dello staglio.</p><p><strong>In giornata:</strong> puntata a T.A. per le ore del programma, massa coperta, ed è già ora di staglio.</p>',
       dstep3: '<h3>Staglio e appretto</h3><p>Forma i panetti con pochi movimenti e mettili nei contenitori unti. Appretto per le ore del programma: pronto col <strong>test del dito</strong> — la fossetta risale piano.</p>',
       dstep4: '<h3>Stesura e cottura</h3><p>Come sempre: semola sul banco, centro sottile, aria verso il bordo, forno rovente. La diretta dà una mollica più regolare della biga: cornicione ordinato, morso più delicato.</p>',
@@ -1041,7 +1072,12 @@
       h1Dir: 'Neapolitan Pizza <em>Direct</em>',
       subDir: 'The direct-method variant of my pizza: one dough, one flour, with or without the fridge — water and times tuned to your home temperatures.',
       dirDay: 'Direct method', dirDough: 'The single dough',
-      dirFlour: 'Flour <span class="note">W 260–290</span>',
+      dirFlour: 'Flour <span class="note" id="dirWNote">W 260–290</span>',
+      flourTitle: 'The right flour · for your hours',
+      flourGoal: 'Target for your schedule <span class="note">more hours at room temp = more strength</span>',
+      flourT1: 'Classic flour <span class="note">e.g. Caputo Nuvola or Pizzeria</span>',
+      flourT2: '50/50 blend <span class="note">e.g. Nuvola + Nuvola Super</span>',
+      flourT3: 'Strong flour <span class="note">e.g. Nuvola Super, or cut with Manitoba</span>',
       dirBulkCold: 'Bulk rest at room temp before the fridge <span class="note">covered mass</span>',
       dirFridge: 'Cold maturation <span class="note">in bulk, covered</span>',
       dirPull: 'Out of the fridge before dividing <span class="note">takes the chill off</span>',
@@ -1058,7 +1094,7 @@
       schedDough: 'Dough off the mixer <span class="note">measure it with a probe thermometer</span>',
       schedMixer: 'Spiral mixer <span class="note">warms the dough by ~6 °C</span>',
       schedMixerQty: '1st 10 min · 2nd 3 min',
-      dstep1: '<h3>The single dough</h3><p>One flour (<strong>W 260–290</strong>) and the yeast dose shown by the calculator. In the <strong>spiral mixer</strong>: nearly all the water in the bowl <strong>at the temperature from the schedule</strong> with the yeast dissolved, flour rained in on <strong>1st speed</strong> (8–10 minutes), <strong>salt halfway through</strong>, then closing on <strong>2nd speed</strong> (2–3 minutes) with the last cold water in a stream. Ready when smooth, pulling away from the bowl and "crackling". Target: <strong>23–25 °C</strong> off the mixer.</p>',
+      dstep1: '<h3>The single dough</h3><p>One flour, at the strength shown in the <strong>«The right flour»</strong> card, and the yeast dose shown by the calculator. In the <strong>spiral mixer</strong>: nearly all the water in the bowl <strong>at the temperature from the schedule</strong> with the yeast dissolved, flour rained in on <strong>1st speed</strong> (8–10 minutes), <strong>salt halfway through</strong>, then closing on <strong>2nd speed</strong> (2–3 minutes) with the last cold water in a stream. Ready when smooth, pulling away from the bowl and "crackling". Target: <strong>23–25 °C</strong> off the mixer.</p>',
       dstep2: '<h3>Bulk — with fridge or same day</h3><p><strong>With fridge:</strong> covered mass at room temp for the bulk rest in the schedule, then into the refrigerator for the hours shown: the cold matures the dough and buys extensibility and flavour. The next day, out of the fridge for the time in the schedule before dividing.</p><p><strong>Same day:</strong> bulk proof at room temp for the hours in the schedule, covered, and it\'s already time to divide.</p>',
       dstep3: '<h3>Dividing and final proof</h3><p>Shape the balls with few movements and place them in oiled containers. Proof for the hours in the schedule: ready with the <strong>poke test</strong> — the dimple springs back slowly.</p>',
       dstep4: '<h3>Stretching and baking</h3><p>As always: semolina on the bench, thin centre, air pushed to the rim, blazing oven. Direct dough gives a more regular crumb than biga: tidy cornicione, gentler bite.</p>',
@@ -1260,6 +1296,12 @@
       [['q8', 8, false], ['q10', 10, false], ['q16', 16, true], ['q24', 24, true]].forEach(function (q) {
         $(q[0]).setAttribute('aria-pressed', s.ore === q[1] && s.frigo === q[2]);
       });
+      var wt = dirWTier(p);
+      var wTxt = 'W ' + wt.wMin + '–' + wt.wMax;
+      $('fGoal').textContent = wTxt;
+      var dirWNote = document.getElementById('dirWNote');
+      if (dirWNote) dirWNote.textContent = wTxt;
+      [1, 2, 3].forEach(function (i2) { $('fT' + i2).classList.toggle('fon', wt.tier === i2); });
     }
     $('sWater').textContent = '~' + s.waterC + ' °C';
     $('sAppr').textContent = '~' + hMezze(s.apprettoH) + ' h';

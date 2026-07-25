@@ -10,8 +10,8 @@ function block(name) {
   if (!m) { console.error(`blocco ${name} non trovato in index.html`); process.exit(1); }
   return m[1];
 }
-const { calcDough, calcSchedule, calcTimeline, lievDirettaPct, calcDiretta, calcScheduleDiretta, calcTimelineDiretta, paramsToQuery, queryToParams } = new Function(
-  block('CALC') + block('CODEC') + '; return { calcDough, calcSchedule, calcTimeline, lievDirettaPct, calcDiretta, calcScheduleDiretta, calcTimelineDiretta, paramsToQuery, queryToParams };'
+const { calcDough, calcSchedule, calcTimeline, lievDirettaPct, dirWTier, calcDiretta, calcScheduleDiretta, calcTimelineDiretta, paramsToQuery, queryToParams } = new Function(
+  block('CALC') + block('CODEC') + '; return { calcDough, calcSchedule, calcTimeline, lievDirettaPct, dirWTier, calcDiretta, calcScheduleDiretta, calcTimelineDiretta, paramsToQuery, queryToParams };'
 )();
 
 let fails = 0;
@@ -133,6 +133,15 @@ const rd = calcDiretta(dbase);
   eq('diretta: lievito = dose calcolata', rd.liev, rd.farinaTot * pct, 0.001);
   eq('diretta: impasto = 1681', rd.impasto, 1681, 0.001);
 }
+
+// --- DIRETTA: forza della farina richiesta (W) da percorso, ore e temperature ---
+eq('W: frigo 24 h -> classica', dirWTier({ frigoDiretta: true, dirOre: 24, tAmb: 21, tFrigo: 4 }).tier, 1);
+eq('W: frigo 48 h -> taglio', dirWTier({ frigoDiretta: true, dirOre: 48, tAmb: 21, tFrigo: 4 }).tier, 2);
+eq('W: T.A. 8 h -> classica', dirWTier({ frigoDiretta: false, dirOre: 8, tAmb: 21 }).tier, 1);
+eq('W: T.A. 16 h -> taglio', dirWTier({ frigoDiretta: false, dirOre: 16, tAmb: 21 }).tier, 2);
+eq('W: T.A. 24 h -> forte', dirWTier({ frigoDiretta: false, dirOre: 24, tAmb: 21 }).tier, 3);
+eq('W: T.A. 16 h a 27° -> forte (estate)', dirWTier({ frigoDiretta: false, dirOre: 16, tAmb: 27 }).tier, 3);
+eq('W: tier 3 = 320-340', dirWTier({ frigoDiretta: false, dirOre: 24, tAmb: 21 }).wMin, 320);
 
 // --- DIRETTA: germe e malto sono accessori della biga, qui ignorati ---
 {
