@@ -512,6 +512,7 @@
         <div class="row flourrow fon" id="fT1"><span class="what" data-i18n="flourT1">Farina classica <span class="note">es. Caputo Nuvola o Pizzeria</span></span><span class="dots"></span><span class="qty">W 260–290</span></div>
         <div class="row flourrow" id="fT2"><span class="what" data-i18n="flourT2">Taglio 50/50 <span class="note">es. Nuvola + Nuvola Super</span></span><span class="dots"></span><span class="qty">W ~300–320</span></div>
         <div class="row flourrow" id="fT3"><span class="what" data-i18n="flourT3">Farina forte <span class="note">es. Nuvola Super, o taglio con Manitoba</span></span><span class="dots"></span><span class="qty">W 320–340</span></div>
+        <p class="calwarn" id="fHydraWarn" hidden></p>
       </div>
       <div class="rcard">
         <p class="day" data-i18n="calTitle">Il calendario · dimmi quando vuoi infornare</p>
@@ -894,6 +895,17 @@
     return { tier: 3, wMin: 320, wMax: 340 };
   }
 
+  // Farina forte + idratazione bassa = impasto tenace (panetti che non si
+  // rilassano, disco che non si apre sottile, base spessa e morbida). Le farine
+  // forti vogliono più acqua: W 320–340 → ≥66%, W 300–320 → ≥64%. Alternativa:
+  // il percorso con frigo, che con meno ore equivalenti basta una farina W 260–290.
+  function dirHydraFlag(p) {
+    var wt = dirWTier(p);
+    var minIdr = wt.tier === 3 ? 66 : wt.tier === 2 ? 64 : 0;
+    var show = minIdr > 0 && p.idr < minIdr;
+    return { show: show, minIdr: minIdr, tier: wt.tier, frigo: p.frigoDiretta !== false, wMin: wt.wMin, wMax: wt.wMax };
+  }
+
   function calcDiretta(p) {
     var idr = p.idr / 100;
     var salePct = p.saleGkg / 1000;
@@ -923,6 +935,10 @@
     var pullOutH = clamp(Math.round((2 + (6 - tF) * 0.15 + (23 - tA) * 0.1) * 2) / 2, 1.5, 3);
     var bulkMin = 60; // puntata prima del frigo
     var fridgeH = Math.max(4, ore - 1 - pullOutH - apprettoH);
+    // Percorso a T.A.: regola 20/80 — puntata corta, appretto lungo. Il gas che
+    // gonfia il cornicione nasce nel panetto e le farine forti hanno bisogno di
+    // ore per rilassarsi: appretto ≈70% delle ore (max 16 h), il resto puntata.
+    if (!frigo) apprettoH = clamp(Math.round(ore * 0.7 * 2) / 2, apprettoH, Math.max(apprettoH, Math.min(16, ore - 1)));
     var bulkH = Math.max(1, ore - apprettoH); // puntata del percorso a T.A.
     var fr = frictionC(p);
     var waterC = clamp(Math.round(((24 - fr) * (r.farinaTot + r.acqua) - r.farinaTot * tA) / Math.max(r.acqua, 1)), 5, 28);
@@ -1068,6 +1084,8 @@
       dirDay: 'Metodo diretto', dirDough: "L'impasto unico",
       dirFlour: 'Farina <span class="note" id="dirWNote">W 260–290</span>',
       flourTitle: 'La farina giusta · per le tue ore',
+      flourHydraTA: '⚠️ Farina W {w} al {idr}% è troppo asciutta: impasto tenace, panetti che non si rilassano, disco che non si apre sottile, base spessa e morbida. Sali almeno al {min}% — oppure passa al percorso <strong>con frigo</strong>: con meno ore equivalenti basta una farina W 260–290 anche a questa idratazione.',
+      flourHydraFrigo: '⚠️ Farina W {w} al {idr}% è troppo asciutta: impasto tenace e base spessa. Sali almeno al {min}%, o riduci le ore in frigo per tornare a una farina W 260–290.',
       flourGoal: '🎯 Obiettivo per il tuo programma <span class="note">più ore a T.A. = più forza</span>',
       flourT1: 'Farina classica <span class="note">es. Caputo Nuvola o Pizzeria</span>',
       flourT2: 'Taglio 50/50 <span class="note">es. Nuvola + Nuvola Super</span>',
@@ -1191,6 +1209,8 @@
       dirDay: 'Direct method', dirDough: 'The single dough',
       dirFlour: 'Flour <span class="note" id="dirWNote">W 260–290</span>',
       flourTitle: 'The right flour · for your hours',
+      flourHydraTA: '⚠️ W {w} flour at {idr}% is too dry: tenacious dough, balls that never relax, a disc that won\'t open thin, thick soft base. Go to at least {min}% — or switch to the <strong>fridge route</strong>: with fewer equivalent hours a W 260–290 flour is enough even at this hydration.',
+      flourHydraFrigo: '⚠️ W {w} flour at {idr}% is too dry: tenacious dough and a thick base. Go to at least {min}%, or shorten the fridge hours to get back to a W 260–290 flour.',
       flourGoal: '🎯 Target for your schedule <span class="note">more hours at room temp = more strength</span>',
       flourT1: 'Classic flour <span class="note">e.g. Caputo Nuvola or Pizzeria</span>',
       flourT2: '50/50 blend <span class="note">e.g. Nuvola + Nuvola Super</span>',
@@ -1430,6 +1450,12 @@
       var dirWNote = document.getElementById('dirWNote');
       if (dirWNote) dirWNote.textContent = wTxt;
       [1, 2, 3].forEach(function (i2) { $('fT' + i2).classList.toggle('fon', wt.tier === i2); });
+      var hf = dirHydraFlag(p);
+      $('fHydraWarn').hidden = !hf.show;
+      if (hf.show) {
+        $('fHydraWarn').innerHTML = t(hf.frigo ? 'flourHydraFrigo' : 'flourHydraTA')
+          .replace('{w}', hf.wMin + '–' + hf.wMax).replace('{idr}', p.idr).replace('{min}', hf.minIdr);
+      }
       var folds = dirFolds(p);
       $('sFoldsWhat').setAttribute('data-i18n', folds.needed ? 'dirFoldsNeed' : 'dirFoldsOpt');
       $('sFoldsWhat').innerHTML = t(folds.needed ? 'dirFoldsNeed' : 'dirFoldsOpt');

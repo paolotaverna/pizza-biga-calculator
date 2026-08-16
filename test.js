@@ -10,8 +10,8 @@ function block(name) {
   if (!m) { console.error(`blocco ${name} non trovato in index.html`); process.exit(1); }
   return m[1];
 }
-const { calcDough, calcSchedule, calcTimeline, lievDirettaPct, dirWTier, dirFolds, frictionC, calcDiretta, calcScheduleDiretta, calcTimelineDiretta, paramsToQuery, queryToParams } = new Function(
-  block('CALC') + block('CODEC') + '; return { calcDough, calcSchedule, calcTimeline, lievDirettaPct, dirWTier, dirFolds, frictionC, calcDiretta, calcScheduleDiretta, calcTimelineDiretta, paramsToQuery, queryToParams };'
+const { calcDough, calcSchedule, calcTimeline, lievDirettaPct, dirWTier, dirHydraFlag, dirFolds, frictionC, calcDiretta, calcScheduleDiretta, calcTimelineDiretta, paramsToQuery, queryToParams } = new Function(
+  block('CALC') + block('CODEC') + '; return { calcDough, calcSchedule, calcTimeline, lievDirettaPct, dirWTier, dirHydraFlag, dirFolds, frictionC, calcDiretta, calcScheduleDiretta, calcTimelineDiretta, paramsToQuery, queryToParams };'
 )();
 
 let fails = 0;
@@ -217,6 +217,38 @@ eq('diretta: 1 + 17.5 + 2.5 + 3 = 24', sd.bulkMin / 60 + sd.fridgeH + sd.pullOut
   eq('diretta timeline T.A. 8 h: inizio = -8 h', tl2[0].at, bake - 8 * H);
   const s10 = calcScheduleDiretta({ ...dbase, frigoDiretta: false, dirOre: 10 }, rd);
   eq('diretta timeline T.A. 10 h: inizio = -10 h', calcTimelineDiretta(bake, s10)[0].at, bake - 10 * H);
+}
+
+// --- DIRETTA T.A.: regola 20/80 — appretto ≈70% delle ore (max 16 h), puntata il resto ---
+{
+  const ta = (ore, extra) => calcScheduleDiretta({ ...dbase, frigoDiretta: false, dirOre: ore, ...(extra || {}) }, rd);
+  eq('T.A. 8 h: appretto 5.5 h', ta(8).apprettoH, 5.5);
+  eq('T.A. 8 h: puntata 2.5 h', ta(8).bulkH, 2.5);
+  eq('T.A. 10 h: appretto 7 h', ta(10).apprettoH, 7);
+  eq('T.A. 20 h: appretto 14 h', ta(20).apprettoH, 14);
+  eq('T.A. 20 h: puntata 6 h', ta(20).bulkH, 6);
+  eq('T.A. 24 h: appretto max 16 h', ta(24).apprettoH, 16);
+  eq('T.A. 24 h: puntata 8 h', ta(24).bulkH, 8);
+  eq('T.A. 6 h: appretto 4 h', ta(6).apprettoH, 4);
+  eq('T.A. 6 h: puntata + appretto = 6', ta(6).bulkH + ta(6).apprettoH, 6);
+  eq('T.A. 8 h a 27°: appretto resta 5.5 h', ta(8, { tAmb: 27 }).apprettoH, 5.5);
+  eq('frigo 24 h: appretto invariato 3 h', calcScheduleDiretta(dbase, rd).apprettoH, 3);
+  const H = 3600000, bake = 1000000000000;
+  const tl20 = calcTimelineDiretta(bake, ta(20));
+  eq('T.A. 20 h timeline: staglio = -14 h', tl20.find(x => x.k === 'calBalls').at, bake - 14 * H);
+  eq('T.A. 20 h timeline: inizio = -20 h', tl20[0].at, bake - 20 * H);
+}
+
+// --- DIRETTA: farina forte + idratazione bassa → avviso ---
+{
+  const f = (o) => dirHydraFlag({ ...dbase, ...o });
+  eq('W forte (T.A. 20 h) al 63% → avviso', f({ frigoDiretta: false, dirOre: 20, idr: 63 }).show, true);
+  eq('W forte al 63%: minimo 66%', f({ frigoDiretta: false, dirOre: 20, idr: 63 }).minIdr, 66);
+  eq('W forte al 63%: percorso T.A. segnalato', f({ frigoDiretta: false, dirOre: 20, idr: 63 }).frigo, false);
+  eq('W forte al 68% → ok', f({ frigoDiretta: false, dirOre: 20, idr: 68 }).show, false);
+  eq('taglio (T.A. 16 h) al 63% → avviso min 64%', f({ frigoDiretta: false, dirOre: 16, idr: 63 }).minIdr, 64);
+  eq('classica (frigo 24 h) al 60% → nessun avviso', f({ frigoDiretta: true, dirOre: 24, idr: 60 }).show, false);
+  eq('taglio (frigo 48 h) al 62% → avviso, percorso frigo', f({ frigoDiretta: true, dirOre: 48, idr: 62 }).frigo, true);
 }
 
 // --- CODEC: metodo e percorso frigo ---
