@@ -74,14 +74,14 @@ let s = calcSchedule({ tAmb: 21, tFrigo: 4 }, calcDough(base));
 eq('sched riposo TA = 65 min', s.restMin, 65);
 eq('sched frigo = 20 h', s.fridgeH, 20);
 eq('sched fuori dal frigo = 3 h', s.pullOutH, 3);
-eq('sched acqua = 17 °C', s.waterC, 17);
+eq('sched acqua = 18 °C (calori specifici)', s.waterC, 18);
 eq('sched appretto = 3 h', s.apprettoH, 3);
 
 // --- SCHEDULE: cucina calda -> riposo e appretto corti, acqua quasi di frigo ---
 s = calcSchedule({ tAmb: 28, tFrigo: 4 }, calcDough(base));
 eq('caldo: riposo = 30 min', s.restMin, 30);
 eq('caldo: appretto = 1.5 h', s.apprettoH, 1.5);
-eq('caldo: acqua clampata a 5 °C', s.waterC, 5);
+eq('caldo: acqua = 9 °C', s.waterC, 9);
 
 // --- SCHEDULE: casa fredda e frigo gelido -> clamp verso l'alto ---
 s = calcSchedule({ tAmb: 15, tFrigo: 1 }, calcDough(base));
@@ -91,7 +91,7 @@ eq('freddo: fuori dal frigo = 4 h', s.pullOutH, 4);
 
 // --- SCHEDULE: senza tAmb/tFrigo usa i default 21/4 ---
 s = calcSchedule({}, calcDough(base));
-eq('sched default = come 21/4', s.waterC, 17);
+eq('sched default = come 21/4', s.waterC, 18);
 
 // --- TIMELINE: a ritroso dall'infornata, con il programma di default (21/4) ---
 {
@@ -157,8 +157,8 @@ eq('attrito default (spirale) = 6', frictionC({}), 6);
   const wSpir = calcScheduleDiretta({ ...dbase, mixer: 'spirale' }, rd).waterC;
   const wMano = calcScheduleDiretta({ ...dbase, mixer: 'mano' }, rd).waterC;
   eq('a mano: acqua più calda della spirale', wMano > wSpir, true);
-  // 3 °C in meno di attrito sull'intero impasto = ~3*(farina+acqua)/acqua sull'acqua
-  const atteso = 3 * (rd.farinaTot + rd.acqua) / rd.acqua;
+  // 3 °C in meno di attrito sull'intero impasto, pesato coi calori specifici
+  const atteso = 3 * (rd.farinaTot * 1.8 + rd.acqua * 4.18) / (rd.acqua * 4.18);
   eq('a mano: acqua più calda in proporzione alla massa', Math.abs((wMano - wSpir) - atteso) <= 1, true);
 }
 
@@ -201,7 +201,33 @@ eq('diretta: puntata pre-frigo = 60 min', sd.bulkMin, 60);
 eq('diretta: frigo = 17.5 h', sd.fridgeH, 17.5);
 eq('diretta: fuori dal frigo = 2.5 h', sd.pullOutH, 2.5);
 eq('diretta: appretto = 3 h', sd.apprettoH, 3);
-eq('diretta: acqua = 13 °C', sd.waterC, 13);
+eq('diretta: acqua = 16 °C (calori specifici)', sd.waterC, 16);
+{
+  // bilancio termico esplicito: 24 - 6 = 18 °C di impasto, farina a 21 °C
+  const hF = rd.farinaTot * 1.8, hA = rd.acqua * 4.18;
+  const atteso = Math.round((18 * (hF + hA) - hF * 21) / hA);
+  eq('diretta: acqua = bilancio termico con c_farina 1.8 / c_acqua 4.18', sd.waterC, atteso);
+}
+
+// --- ATTRITO calibrabile: input esplicito, clamp 0–15, acqua reagisce ---
+eq('attrito esplicito 8 -> 8', frictionC({ mixer: 'spirale', friction: 8 }), 8);
+eq('attrito esplicito 0 -> 0', frictionC({ mixer: 'spirale', friction: 0 }), 0);
+eq('attrito 99 -> clamp 15', frictionC({ mixer: 'mano', friction: 99 }), 15);
+eq('attrito NaN -> default mixer', frictionC({ mixer: 'mano', friction: NaN }), 3);
+{
+  const w6 = calcScheduleDiretta({ ...dbase, friction: 6 }, rd).waterC;
+  const w8 = calcScheduleDiretta({ ...dbase, friction: 8 }, rd).waterC;
+  eq('attrito 6 = default spirale', w6, sd.waterC);
+  eq('attrito +2 -> acqua più fredda di ~2*(hF+hA)/hA', Math.abs((w6 - w8) - 2 * (rd.farinaTot * 1.8 + rd.acqua * 4.18) / (rd.acqua * 4.18)) <= 1, true);
+  const wb6 = calcSchedule({ tAmb: 21, tFrigo: 4, friction: 6 }, calcDough(base)).waterC;
+  const wb9 = calcSchedule({ tAmb: 21, tFrigo: 4, friction: 9 }, calcDough(base)).waterC;
+  eq('biga: attrito 6 = default', wb6, 18);
+  eq('biga: attrito 9 -> acqua più fredda', wb9 < wb6, true);
+  const back = queryToParams(paramsToQuery({ n: 6, peso: 270, friction: 7.5 }));
+  eq('codec fr round-trip', back.friction, 7.5);
+  eq('codec fr clamp', queryToParams('fr=40').friction, 15);
+  eq('codec senza fr -> undefined', queryToParams('n=6').friction, undefined);
+}
 eq('diretta: 1 + 17.5 + 2.5 + 3 = 24', sd.bulkMin / 60 + sd.fridgeH + sd.pullOutH + sd.apprettoH, 24);
 
 // --- DIRETTA: calendario — l'inizio è esattamente (infornata - ore) ---

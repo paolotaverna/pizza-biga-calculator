@@ -439,6 +439,11 @@
         </div>
       </div>
       <div class="hint" data-i18n="tempsHint">Da queste due temperature dipendono acqua e tempi del programma</div>
+      <div class="field">
+        <label for="friction" data-i18n="fricLabel">Attrito impastatrice (°C)</label>
+        <input type="number" id="friction" min="0" max="15" step="0.5" value="6">
+        <div class="hint" data-i18n="fricHint">Quanto scalda l'impasto. Calibralo: misura l'impasto a fine impastata — se esce 2 °C più caldo del previsto, aggiungi 2.</div>
+      </div>
 
       <div class="field">
         <label id="mixerLabel" data-i18n="mixerType">Impastatrice</label>
@@ -811,10 +816,12 @@
     // acqua di chiusura: bilancio termico per impasto a ~24 °C a fine impastata
     // (attrito impastatrice: spirale ~+6 °C, a mano ~+3 °C; biga stimata dopo pullOutH ore fuori dal frigo)
     var tBiga = tA - 0.25 * (tA - tF);
-    var mBiga = r.bigaTot, mFar = r.chiFarina, mAcq = Math.max(r.chiAcqua, 1);
-    var mTot = mBiga + mFar + mAcq;
+    var mFar = r.chiFarina, mAcq = Math.max(r.chiAcqua, 1);
+    // biga = farina + acqua, ciascuna col suo calore specifico
+    var hBiga = r.bigaFarina * C_FARINA + r.bigaAcqua * C_ACQUA;
+    var hFar = mFar * C_FARINA, hAcq = mAcq * C_ACQUA;
     var fr = frictionC(p);
-    var waterC = clamp(Math.round(((24 - fr) * mTot - mBiga * tBiga - mFar * tA) / mAcq), 5, 28);
+    var waterC = clamp(Math.round(((24 - fr) * (hBiga + hFar + hAcq) - hBiga * tBiga - hFar * tA) / hAcq), 5, 28);
     // appretto: circa raddoppia ogni 6 °C in meno (base: 3 h a 21 °C)
     var apprettoH = clamp(Math.round(3 * Math.pow(2, (21 - tA) / 6) * 2) / 2, 1.5, 5);
     return { restMin: restMin, fridgeH: fridgeH, pullOutH: pullOutH, waterC: waterC, apprettoH: apprettoH };
@@ -841,7 +848,16 @@
 
   // Attrito dell'impastatrice: la spirale scalda l'impasto di ~6 °C, l'impasto
   // a mano molto meno (~3 °C). Serve al bilancio termico dell'acqua.
-  function frictionC(p) { return p.mixer === 'mano' ? 3 : 6; }
+  // Attrito dell'impastatrice (°C guadagnati dall'impasto): default 6 a spirale,
+  // 3 a mano; calibrabile — misura l'impasto a fine impastata e correggi.
+  function frictionDefault(mixer) { return mixer === 'mano' ? 3 : 6; }
+  function frictionC(p) {
+    var f = p.friction;
+    if (f == null || !isFinite(f)) return frictionDefault(p.mixer);
+    return Math.min(15, Math.max(0, f));
+  }
+  // Calori specifici (kJ/kg·K): l'acqua pesa più della farina nel bilancio termico
+  var C_FARINA = 1.8, C_ACQUA = 4.18;
 
   // Pieghe di rinforzo: sempre proposte nella diretta; diventano consigliate
   // (non più opzionali) con idratazione alta (>67%) o impastando a mano.
@@ -941,7 +957,8 @@
     if (!frigo) apprettoH = clamp(Math.round(ore * 0.7 * 2) / 2, apprettoH, Math.max(apprettoH, Math.min(16, ore - 1)));
     var bulkH = Math.max(1, ore - apprettoH); // puntata del percorso a T.A.
     var fr = frictionC(p);
-    var waterC = clamp(Math.round(((24 - fr) * (r.farinaTot + r.acqua) - r.farinaTot * tA) / Math.max(r.acqua, 1)), 5, 28);
+    var hFar = r.farinaTot * C_FARINA, hAcq = Math.max(r.acqua, 1) * C_ACQUA;
+    var waterC = clamp(Math.round(((24 - fr) * (hFar + hAcq) - hFar * tA) / hAcq), 5, 28);
     return { frigo: frigo, ore: ore, bulkMin: bulkMin, bulkH: bulkH, fridgeH: fridgeH, pullOutH: pullOutH, waterC: waterC, apprettoH: apprettoH };
   }
 
@@ -986,7 +1003,8 @@
     ['mg', 'maltoGkg', 1, 30],
     ['ta', 'tAmb', 15, 35],
     ['tf', 'tFrigo', 1, 10],
-    ['do', 'dirOre', 6, 48]
+    ['do', 'dirOre', 6, 48],
+    ['fr', 'friction', 0, 15]
   ];
 
   function paramsToQuery(p) {
@@ -1104,11 +1122,12 @@
       dirFridgeIn: 'Impasto in frigorifero', dirFridgeInN: 'contenitore chiuso · ~{x} h',
       dirFridgeOut: 'Impasto fuori dal frigo',
       schedDough: 'Impasto a fine impastata <span class="note">misuralo con un termometro a sonda</span>',
-      schedMixer: 'Impastatrice a spirale <span class="note">scalda l\'impasto di ~6 °C</span>',
+      schedMixer: 'Impastatrice a spirale <span class="note">scalda l\'impasto di ~{x} °C</span>',
       schedMixerQty: '1ª 10 min · 2ª 3 min',
-      schedMixerHand: 'Impasto a mano <span class="note">scalda poco: ~3 °C</span>',
+      schedMixerHand: 'Impasto a mano <span class="note">scalda l\'impasto di ~{x} °C</span>',
       schedMixerHandQty: '~15–20 min · a più riprese',
       mixerType: 'Impastatrice', mixSpirale: 'A spirale', mixMano: 'A mano',
+      fricLabel: 'Attrito impastatrice (°C)', fricHint: 'Quanto scalda l\'impasto. Calibralo: misura l\'impasto a fine impastata — se esce 2 °C più caldo del previsto, aggiungi 2.',
       dirFoldsOpt: 'Pieghe di rinforzo <span class="note">opzionali · struttura e forza</span>',
       dirFoldsNeed: 'Pieghe di rinforzo <span class="note">consigliate: idratazione alta o a mano</span>',
       dirFoldsQty: '1 giro · dopo ~20 min',
@@ -1229,11 +1248,12 @@
       dirFridgeIn: 'Dough into the fridge', dirFridgeInN: 'sealed container · ~{x} h',
       dirFridgeOut: 'Dough out of the fridge',
       schedDough: 'Dough off the mixer <span class="note">measure it with a probe thermometer</span>',
-      schedMixer: 'Spiral mixer <span class="note">warms the dough by ~6 °C</span>',
+      schedMixer: 'Spiral mixer <span class="note">warms the dough by ~{x} °C</span>',
       schedMixerQty: '1st 10 min · 2nd 3 min',
-      schedMixerHand: 'Hand mixing <span class="note">warms little: ~3 °C</span>',
+      schedMixerHand: 'Hand mixing <span class="note">warms the dough by ~{x} °C</span>',
       schedMixerHandQty: '~15–20 min · in stages',
       mixerType: 'Mixer', mixSpirale: 'Spiral', mixMano: 'By hand',
+      fricLabel: 'Mixer friction (°C)', fricHint: 'How much the mixer warms the dough. Calibrate it: probe the dough off the mixer — if it comes out 2 °C warmer than expected, add 2.',
       dirFoldsOpt: 'Strengthening folds <span class="note">optional · structure and strength</span>',
       dirFoldsNeed: 'Strengthening folds <span class="note">recommended: high hydration or by hand</span>',
       dirFoldsQty: '1 set · after ~20 min',
@@ -1363,6 +1383,7 @@
       metodo: state.metodo,
       frigoDiretta: state.dirFrigo,
       mixer: state.mixer,
+      friction: Math.min(15, Math.max(0, +$('friction').value)),
       dirOre: Math.min(48, Math.max(6, Math.round(+$('dirOre').value || 24)))
     };
   }
@@ -1469,7 +1490,7 @@
     // riga impastatrice: etichetta, nota e tempi secondo spirale / a mano
     var mano = state.mixer === 'mano';
     $('sMixerWhat').setAttribute('data-i18n', mano ? 'schedMixerHand' : 'schedMixer');
-    $('sMixerWhat').innerHTML = t(mano ? 'schedMixerHand' : 'schedMixer');
+    $('sMixerWhat').innerHTML = t(mano ? 'schedMixerHand' : 'schedMixer').replace('{x}', frictionC(p));
     $('sMixerQty').setAttribute('data-i18n', mano ? 'schedMixerHandQty' : 'schedMixerQty');
     $('sMixerQty').textContent = t(mano ? 'schedMixerHandQty' : 'schedMixerQty');
 
@@ -1569,7 +1590,7 @@
     $('mixSpirale').setAttribute('aria-pressed', state.mixer === 'spirale');
     $('mixMano').setAttribute('aria-pressed', state.mixer === 'mano');
   }
-  function setMixer(m) { setMixerState(m); onInput(); }
+  function setMixer(m) { setMixerState(m); $('friction').value = frictionDefault(state.mixer); onInput(); }
 
   function setDirRouteState(frigo) {
     state.dirFrigo = !!frigo;
@@ -1612,7 +1633,8 @@
     }
     if (p.metodo != null) setMetodoState(p.metodo);
     if (p.frigoDiretta != null) setDirRouteState(p.frigoDiretta);
-    if (p.mixer != null) setMixerState(p.mixer);
+    if (p.mixer != null) { setMixerState(p.mixer); $('friction').value = frictionDefault(state.mixer); }
+    if (p.friction != null) $('friction').value = p.friction;
     if (p.dirOre != null) {
       var o = $('dirOre');
       o.value = Math.min(+o.max, Math.max(+o.min, p.dirOre));
@@ -1843,7 +1865,7 @@
   $('mixDate').addEventListener('change', onMixEdited);
   $('mixTime').addEventListener('change', onMixEdited);
 
-  ['nPanetti', 'pesoPanetto', 'idr', 'bigaPct', 'sale', 'olio', 'lievBiga', 'lievChiusura', 'maltoGkg', 'tAmb', 'tFrigo'].forEach(function (id) {
+  ['nPanetti', 'pesoPanetto', 'idr', 'bigaPct', 'sale', 'olio', 'lievBiga', 'lievChiusura', 'maltoGkg', 'tAmb', 'tFrigo', 'friction'].forEach(function (id) {
     $(id).addEventListener('input', onInput);
   });
   ['germe', 'malto'].forEach(function (id) {
