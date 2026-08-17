@@ -439,11 +439,32 @@
         </div>
       </div>
       <div class="hint" data-i18n="tempsHint">Da queste due temperature dipendono acqua e tempi del programma</div>
-      <div class="field">
-        <label for="friction" data-i18n="fricLabel">Attrito impastatrice (°C)</label>
-        <input type="number" id="friction" min="0" max="15" step="0.5" value="6">
-        <div class="hint" data-i18n="fricHint">Quanto scalda l'impasto. Calibralo: misura l'impasto a fine impastata — se esce 2 °C più caldo del previsto, aggiungi 2.</div>
+      <div class="duo">
+        <div class="field">
+          <label for="mixMin" data-i18n="mixMinLabel">Impastamento (min)</label>
+          <input type="number" id="mixMin" min="3" max="40" step="1" value="13">
+        </div>
+        <div class="field">
+          <label for="friction" data-i18n="fricLabel">Attrito (°C)</label>
+          <input type="number" id="friction" min="0" max="15" step="0.5" value="6">
+        </div>
       </div>
+      <div class="hint" data-i18n="fricHint">Quanto l'impastatrice scalda l'impasto nei minuti indicati (cambiando i minuti l'attrito si adatta). Calibralo qui sotto.</div>
+      <details class="yeast" id="calibBox">
+        <summary data-i18n="calibTitle">Calibra dal tuo impasto</summary>
+        <div class="duo">
+          <div class="field">
+            <label for="calWater" data-i18n="calWater">Acqua usata (°C)</label>
+            <input type="number" id="calWater" min="0" max="40" step="0.5" placeholder="16">
+          </div>
+          <div class="field">
+            <label for="calDough" data-i18n="calDough">Impasto a fine impastata (°C)</label>
+            <input type="number" id="calDough" min="10" max="40" step="0.5" placeholder="24">
+          </div>
+        </div>
+        <p class="hint" id="calOut" data-i18n="calHint">Inserisci acqua e temperatura misurata con la sonda: calcolo quanto scalda davvero la tua impastatrice.</p>
+        <div class="saverow"><button type="button" id="calApply" hidden></button></div>
+      </details>
 
       <div class="field">
         <label id="mixerLabel" data-i18n="mixerType">Impastatrice</label>
@@ -858,6 +879,28 @@
   }
   // Calori specifici (kJ/kg·K): l'acqua pesa più della farina nel bilancio termico
   var C_FARINA = 1.8, C_ACQUA = 4.18;
+  // Minuti di impastamento tipici: spirale 13 (1ª 10 + 2ª 3), a mano ~18
+  function mixMinDefault(mixer) { return mixer === 'mano' ? 18 : 13; }
+  // Temperatura della massa PRIMA dell'attrito, data l'acqua usata: media pesata
+  // coi calori specifici di farina (a T.A.), acqua (+ biga, se c'è).
+  function preMixTempC(p, r, waterC) {
+    var tA = p.tAmb == null ? 21 : p.tAmb;
+    var tF = p.tFrigo == null ? 4 : p.tFrigo;
+    var hF, hA, hB = 0, tB = 0;
+    if (r.bigaFarina != null) {
+      hF = r.chiFarina * C_FARINA; hA = Math.max(r.chiAcqua, 1) * C_ACQUA;
+      hB = r.bigaFarina * C_FARINA + r.bigaAcqua * C_ACQUA; tB = tA - 0.25 * (tA - tF);
+    } else {
+      hF = r.farinaTot * C_FARINA; hA = Math.max(r.acqua, 1) * C_ACQUA;
+    }
+    return (hF * tA + hA * waterC + hB * tB) / (hF + hA + hB);
+  }
+  // Calibrazione: attrito reale = impasto misurato − massa prima dell'attrito
+  function calibFriction(p, r, waterC, doughC, minutes) {
+    var fr = Math.round((doughC - preMixTempC(p, r, waterC)) * 2) / 2;
+    var m = minutes > 0 ? minutes : mixMinDefault(p.mixer);
+    return { friction: fr, perMin: Math.round(fr / m * 100) / 100, minutes: m };
+  }
 
   // Pieghe di rinforzo: sempre proposte nella diretta; diventano consigliate
   // (non più opzionali) con idratazione alta (>67%) o impastando a mano.
@@ -1004,7 +1047,8 @@
     ['ta', 'tAmb', 15, 35],
     ['tf', 'tFrigo', 1, 10],
     ['do', 'dirOre', 6, 48],
-    ['fr', 'friction', 0, 15]
+    ['fr', 'friction', 0, 15],
+    ['mt', 'mixMin', 3, 40]
   ];
 
   function paramsToQuery(p) {
@@ -1123,11 +1167,16 @@
       dirFridgeOut: 'Impasto fuori dal frigo',
       schedDough: 'Impasto a fine impastata <span class="note">misuralo con un termometro a sonda</span>',
       schedMixer: 'Impastatrice a spirale <span class="note">scalda l\'impasto di ~{x} °C</span>',
-      schedMixerQty: '1ª 10 min · 2ª 3 min',
+      schedMixerQty: '{x} min · 1ª {a} + 2ª {b}',
       schedMixerHand: 'Impasto a mano <span class="note">scalda l\'impasto di ~{x} °C</span>',
-      schedMixerHandQty: '~15–20 min · a più riprese',
+      schedMixerHandQty: '~{x} min · a più riprese',
       mixerType: 'Impastatrice', mixSpirale: 'A spirale', mixMano: 'A mano',
-      fricLabel: 'Attrito impastatrice (°C)', fricHint: 'Quanto scalda l\'impasto. Calibralo: misura l\'impasto a fine impastata — se esce 2 °C più caldo del previsto, aggiungi 2.',
+      mixMinLabel: 'Impastamento (min)', fricLabel: 'Attrito (°C)',
+      fricHint: 'Quanto l\'impastatrice scalda l\'impasto nei minuti indicati (cambiando i minuti l\'attrito si adatta). Calibralo qui sotto.',
+      calibTitle: 'Calibra dal tuo impasto', calWater: 'Acqua usata (°C)', calDough: 'Impasto a fine impastata (°C)',
+      calHint: 'Inserisci acqua e temperatura misurata con la sonda: calcolo quanto scalda davvero la tua impastatrice.',
+      calOut: 'Attrito misurato: <strong>{f} °C</strong> in {m} min ({r} °C/min) — massa a {t} °C prima di impastare.',
+      calApply: 'Usa {f} °C come attrito',
       dirFoldsOpt: 'Pieghe di rinforzo <span class="note">opzionali · struttura e forza</span>',
       dirFoldsNeed: 'Pieghe di rinforzo <span class="note">consigliate: idratazione alta o a mano</span>',
       dirFoldsQty: '1 giro · dopo ~20 min',
@@ -1249,11 +1298,16 @@
       dirFridgeOut: 'Dough out of the fridge',
       schedDough: 'Dough off the mixer <span class="note">measure it with a probe thermometer</span>',
       schedMixer: 'Spiral mixer <span class="note">warms the dough by ~{x} °C</span>',
-      schedMixerQty: '1st 10 min · 2nd 3 min',
+      schedMixerQty: '{x} min · 1st {a} + 2nd {b}',
       schedMixerHand: 'Hand mixing <span class="note">warms the dough by ~{x} °C</span>',
-      schedMixerHandQty: '~15–20 min · in stages',
+      schedMixerHandQty: '~{x} min · in stages',
       mixerType: 'Mixer', mixSpirale: 'Spiral', mixMano: 'By hand',
-      fricLabel: 'Mixer friction (°C)', fricHint: 'How much the mixer warms the dough. Calibrate it: probe the dough off the mixer — if it comes out 2 °C warmer than expected, add 2.',
+      mixMinLabel: 'Mixing time (min)', fricLabel: 'Friction (°C)',
+      fricHint: 'How much the mixer warms the dough over those minutes (change the minutes and the friction follows). Calibrate it below.',
+      calibTitle: 'Calibrate from your dough', calWater: 'Water used (°C)', calDough: 'Dough off the mixer (°C)',
+      calHint: 'Enter the water you used and the probe reading of the dough: I work out how much your mixer really warms it.',
+      calOut: 'Measured friction: <strong>{f} °C</strong> over {m} min ({r} °C/min) — mass at {t} °C before mixing.',
+      calApply: 'Use {f} °C as friction',
       dirFoldsOpt: 'Strengthening folds <span class="note">optional · structure and strength</span>',
       dirFoldsNeed: 'Strengthening folds <span class="note">recommended: high hydration or by hand</span>',
       dirFoldsQty: '1 set · after ~20 min',
@@ -1384,6 +1438,7 @@
       frigoDiretta: state.dirFrigo,
       mixer: state.mixer,
       friction: Math.min(15, Math.max(0, +$('friction').value)),
+      mixMin: Math.min(40, Math.max(3, Math.round(+$('mixMin').value || mixMinDefault(state.mixer)))),
       dirOre: Math.min(48, Math.max(6, Math.round(+$('dirOre').value || 24)))
     };
   }
@@ -1492,7 +1547,22 @@
     $('sMixerWhat').setAttribute('data-i18n', mano ? 'schedMixerHand' : 'schedMixer');
     $('sMixerWhat').innerHTML = t(mano ? 'schedMixerHand' : 'schedMixer').replace('{x}', frictionC(p));
     $('sMixerQty').setAttribute('data-i18n', mano ? 'schedMixerHandQty' : 'schedMixerQty');
-    $('sMixerQty').textContent = t(mano ? 'schedMixerHandQty' : 'schedMixerQty');
+    var mm = p.mixMin, m2 = Math.min(3, Math.max(1, Math.round(mm * 0.25)));
+    $('sMixerQty').textContent = t(mano ? 'schedMixerHandQty' : 'schedMixerQty').replace('{x}', mm).replace('{a}', mm - m2).replace('{b}', m2);
+    // calibrazione: acqua usata + impasto misurato -> attrito reale
+    $('calWater').placeholder = s.waterC;
+    var cw = parseFloat($('calWater').value), cd = parseFloat($('calDough').value);
+    if (isFinite(cd)) {
+      var cal = calibFriction(p, r, isFinite(cw) ? cw : s.waterC, cd, p.mixMin);
+      $('calOut').innerHTML = t('calOut').replace('{f}', cal.friction).replace('{m}', cal.minutes).replace('{r}', cal.perMin).replace('{t}', Math.round(preMixTempC(p, r, isFinite(cw) ? cw : s.waterC) * 10) / 10);
+      var okF = cal.friction >= 0 && cal.friction <= 15;
+      $('calApply').hidden = !okF;
+      $('calApply').textContent = t('calApply').replace('{f}', cal.friction);
+      $('calApply').dataset.f = cal.friction;
+    } else {
+      $('calOut').innerHTML = t('calHint');
+      $('calApply').hidden = true;
+    }
 
     // Calendario: dalla data/ora di infornata scelta, a ritroso
     var ms = calMs('bakeDate', 'bakeTime');
@@ -1590,7 +1660,7 @@
     $('mixSpirale').setAttribute('aria-pressed', state.mixer === 'spirale');
     $('mixMano').setAttribute('aria-pressed', state.mixer === 'mano');
   }
-  function setMixer(m) { setMixerState(m); $('friction').value = frictionDefault(state.mixer); onInput(); }
+  function setMixer(m) { setMixerState(m); $('friction').value = frictionDefault(state.mixer); $('mixMin').value = mixMinDefault(state.mixer); onInput(); }
 
   function setDirRouteState(frigo) {
     state.dirFrigo = !!frigo;
@@ -1633,8 +1703,9 @@
     }
     if (p.metodo != null) setMetodoState(p.metodo);
     if (p.frigoDiretta != null) setDirRouteState(p.frigoDiretta);
-    if (p.mixer != null) { setMixerState(p.mixer); $('friction').value = frictionDefault(state.mixer); }
+    if (p.mixer != null) { setMixerState(p.mixer); $('friction').value = frictionDefault(state.mixer); $('mixMin').value = mixMinDefault(state.mixer); }
     if (p.friction != null) $('friction').value = p.friction;
+    if (p.mixMin != null) $('mixMin').value = p.mixMin;
     if (p.dirOre != null) {
       var o = $('dirOre');
       o.value = Math.min(+o.max, Math.max(+o.min, p.dirOre));
@@ -1867,6 +1938,21 @@
 
   ['nPanetti', 'pesoPanetto', 'idr', 'bigaPct', 'sale', 'olio', 'lievBiga', 'lievChiusura', 'maltoGkg', 'tAmb', 'tFrigo', 'friction'].forEach(function (id) {
     $(id).addEventListener('input', onInput);
+  });
+  // i minuti di impastamento scalano l'attrito (≈ proporzionale al tempo)
+  $('mixMin').addEventListener('focus', function () { $('mixMin').dataset.prev = $('mixMin').value; });
+  $('mixMin').addEventListener('input', function () {
+    var prev = +$('mixMin').dataset.prev, now = +$('mixMin').value;
+    if (prev > 0 && now > 0 && isFinite(+$('friction').value)) {
+      $('friction').value = Math.min(15, Math.max(0, Math.round(+$('friction').value * now / prev * 2) / 2));
+    }
+    if (now > 0) $('mixMin').dataset.prev = now;
+    onInput();
+  });
+  ['calWater', 'calDough'].forEach(function (id) { $(id).addEventListener('input', render); });
+  $('calApply').addEventListener('click', function () {
+    var f = parseFloat($('calApply').dataset.f);
+    if (isFinite(f)) { $('friction').value = f; onInput(); }
   });
   ['germe', 'malto'].forEach(function (id) {
     $(id).addEventListener('change', onInput);

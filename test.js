@@ -10,8 +10,8 @@ function block(name) {
   if (!m) { console.error(`blocco ${name} non trovato in index.html`); process.exit(1); }
   return m[1];
 }
-const { calcDough, calcSchedule, calcTimeline, lievDirettaPct, dirWTier, dirHydraFlag, dirFolds, frictionC, calcDiretta, calcScheduleDiretta, calcTimelineDiretta, paramsToQuery, queryToParams } = new Function(
-  block('CALC') + block('CODEC') + '; return { calcDough, calcSchedule, calcTimeline, lievDirettaPct, dirWTier, dirHydraFlag, dirFolds, frictionC, calcDiretta, calcScheduleDiretta, calcTimelineDiretta, paramsToQuery, queryToParams };'
+const { calcDough, calcSchedule, calcTimeline, lievDirettaPct, dirWTier, dirHydraFlag, dirFolds, frictionC, mixMinDefault, preMixTempC, calibFriction, calcDiretta, calcScheduleDiretta, calcTimelineDiretta, paramsToQuery, queryToParams } = new Function(
+  block('CALC') + block('CODEC') + '; return { calcDough, calcSchedule, calcTimeline, lievDirettaPct, dirWTier, dirHydraFlag, dirFolds, frictionC, mixMinDefault, preMixTempC, calibFriction, mixMinDefault, preMixTempC, calibFriction, calcDiretta, calcScheduleDiretta, calcTimelineDiretta, paramsToQuery, queryToParams };'
 )();
 
 let fails = 0;
@@ -275,6 +275,31 @@ eq('diretta: 1 + 17.5 + 2.5 + 3 = 24', sd.bulkMin / 60 + sd.fridgeH + sd.pullOut
   eq('taglio (T.A. 16 h) al 63% → avviso min 64%', f({ frigoDiretta: false, dirOre: 16, idr: 63 }).minIdr, 64);
   eq('classica (frigo 24 h) al 60% → nessun avviso', f({ frigoDiretta: true, dirOre: 24, idr: 60 }).show, false);
   eq('taglio (frigo 48 h) al 62% → avviso, percorso frigo', f({ frigoDiretta: true, dirOre: 48, idr: 62 }).frigo, true);
+}
+
+// --- CALIBRAZIONE attrito: massa pre-attrito e attrito misurato ---
+{
+  eq('minuti default spirale = 13', mixMinDefault('spirale'), 13);
+  eq('minuti default a mano = 18', mixMinDefault('mano'), 18);
+  // diretta: acqua alla T suggerita -> massa a 24 - 6 = 18 °C (entro l'arrotondamento dell'acqua)
+  const t0 = preMixTempC(dbase, rd, sd.waterC);
+  eq('pre-mix diretta con acqua suggerita ≈ 18 °C', Math.abs(t0 - 18) <= 0.4, true);
+  eq('pre-mix: acqua a T.A. -> massa a T.A.', preMixTempC(dbase, rd, 21), 21, 0.001);
+  // impasto misurato a 24 con acqua suggerita -> attrito ≈ 6
+  const c = calibFriction(dbase, rd, sd.waterC, 24, 13);
+  eq('calib: 24 °C misurati -> attrito ≈ 6', Math.abs(c.friction - 6) <= 0.5, true);
+  eq('calib: minuti = 13', c.minutes, 13);
+  eq('calib: °C/min ≈ 6/13', Math.abs(c.perMin - 6 / 13) <= 0.05, true);
+  const c2 = calibFriction(dbase, rd, sd.waterC, 26, 13);
+  eq('calib: +2 °C misurati -> attrito +2', c2.friction - c.friction, 2, 0.5);
+  eq('calib: minuti 0 -> default mixer', calibFriction(dbase, rd, 16, 24, 0).minutes, 13);
+  // biga: la biga entra nel bilancio
+  const rb = calcDough(base), sb = calcSchedule({ tAmb: 21, tFrigo: 4 }, rb);
+  eq('pre-mix biga con acqua suggerita ≈ 18 °C', Math.abs(preMixTempC({ tAmb: 21, tFrigo: 4 }, rb, sb.waterC) - 18) <= 0.5, true);
+  eq('calib biga: 24 °C -> attrito ≈ 6', Math.abs(calibFriction({ tAmb: 21, tFrigo: 4 }, rb, sb.waterC, 24, 13).friction - 6) <= 0.5, true);
+  const back = queryToParams(paramsToQuery({ n: 6, peso: 270, mixMin: 15 }));
+  eq('codec mt round-trip', back.mixMin, 15);
+  eq('codec mt clamp', queryToParams('mt=99').mixMin, 40);
 }
 
 // --- CODEC: metodo e percorso frigo ---
