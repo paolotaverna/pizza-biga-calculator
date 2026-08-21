@@ -369,6 +369,12 @@
         <div class="hint" data-i18n="dirOreHint">Il lievito si adatta alle ore: massimo 24 h a T.A., 48 h con frigo</div>
       </div>
 
+      <div class="field only-diretta" id="fPullOut">
+        <label for="dirPullOut" data-i18n="pullOutLabel">Fuori dal frigo prima dello staglio (h)</label>
+        <input type="number" id="dirPullOut" min="0" max="4" step="0.5" placeholder="auto">
+        <div class="hint" data-i18n="pullOutHint">Vuoto = automatico. 0 = staglio a freddo. Le ore che togli qui passano all'appretto dei panetti: il tempo totale fuori dal frigo (e il lievito) non cambia.</div>
+      </div>
+
       <div class="duo">
         <div class="field">
           <label for="nPanetti" data-i18n="balls">Panetti</label>
@@ -992,6 +998,14 @@
     var ore = dirOreClamp(p);
     var apprettoH = clamp(Math.round(3 * Math.pow(2, (21 - tA) / 6) * 2) / 2, 1.5, 5);
     var pullOutH = clamp(Math.round((2 + (6 - tF) * 0.15 + (23 - tA) * 0.1) * 2) / 2, 1.5, 3);
+    // Fuori dal frigo regolabile (solo percorso frigo, codec 'po'): 0 = staglio a
+    // freddo. Le ore tolte qui passano all'appretto, così il tempo totale fuori
+    // dal frigo (e quindi la dose di lievito) non cambia.
+    var pullAutoH = pullOutH;
+    if (frigo && p.dirPullOut != null && isFinite(p.dirPullOut)) {
+      pullOutH = clamp(Math.round(p.dirPullOut * 2) / 2, 0, 4);
+      apprettoH = Math.max(1, apprettoH + pullAutoH - pullOutH);
+    }
     var bulkMin = 60; // puntata prima del frigo
     var fridgeH = Math.max(4, ore - 1 - pullOutH - apprettoH);
     // Percorso a T.A.: regola 20/80 — puntata corta, appretto lungo. Il gas che
@@ -1002,7 +1016,7 @@
     var fr = frictionC(p);
     var hFar = r.farinaTot * C_FARINA, hAcq = Math.max(r.acqua, 1) * C_ACQUA;
     var waterC = clamp(Math.round(((24 - fr) * (hFar + hAcq) - hFar * tA) / hAcq), 5, 28);
-    return { frigo: frigo, ore: ore, bulkMin: bulkMin, bulkH: bulkH, fridgeH: fridgeH, pullOutH: pullOutH, waterC: waterC, apprettoH: apprettoH };
+    return { frigo: frigo, ore: ore, bulkMin: bulkMin, bulkH: bulkH, fridgeH: fridgeH, pullOutH: pullOutH, pullAutoH: pullAutoH, waterC: waterC, apprettoH: apprettoH };
   }
 
   function calcTimelineDiretta(bakeMs, s) {
@@ -1012,14 +1026,14 @@
       var fuori = staglio - s.pullOutH * H;
       var dentro = fuori - s.fridgeH * H;
       var impasta = dentro - s.bulkMin * MIN;
-      return [
+      var tl = [
         { k: 'dirMix', at: impasta },
         { k: 'dirFolds', at: impasta + 20 * MIN },
-        { k: 'dirFridgeIn', at: dentro },
-        { k: 'dirFridgeOut', at: fuori },
-        { k: 'calBalls', at: staglio },
-        { k: 'calBake', at: bakeMs }
+        { k: 'dirFridgeIn', at: dentro }
       ];
+      if (s.pullOutH > 0) tl.push({ k: 'dirFridgeOut', at: fuori }); // staglio a freddo: niente tappa intermedia
+      tl.push({ k: 'calBalls', at: staglio }, { k: 'calBake', at: bakeMs });
+      return tl;
     }
     var impastaTA = staglio - s.bulkH * H;
     return [
@@ -1048,7 +1062,8 @@
     ['tf', 'tFrigo', 1, 10],
     ['do', 'dirOre', 6, 48],
     ['fr', 'friction', 0, 15],
-    ['mt', 'mixMin', 3, 40]
+    ['mt', 'mixMin', 3, 40],
+    ['po', 'dirPullOut', 0, 4]
   ];
 
   function paramsToQuery(p) {
@@ -1160,6 +1175,8 @@
       dirFridgeOutN: 'massa coperta, a intiepidire',
       dirOreLabel: 'Fermentazione totale',
       dirOreHint: 'Il lievito si adatta alle ore: massimo 24 h a T.A., 48 h con frigo',
+      pullOutLabel: 'Fuori dal frigo prima dello staglio (h)',
+      pullOutHint: 'Vuoto = automatico. 0 = staglio a freddo. Le ore che togli qui passano all\'appretto dei panetti: il tempo totale fuori dal frigo (e il lievito) non cambia.',
       dirMixAt: 'Inizio (impasto) il…',
       calAt: 'alle…',
       docTitleDir: 'Pizza Napoletana Diretta — Calcolatore',
@@ -1291,6 +1308,8 @@
       dirFridgeOutN: 'covered mass, warming up',
       dirOreLabel: 'Total fermentation',
       dirOreHint: 'The yeast adapts to the hours: max 24 h at room temp, 48 h with the fridge',
+      pullOutLabel: 'Out of the fridge before dividing (h)',
+      pullOutHint: 'Empty = automatic. 0 = ball straight from the fridge. Hours you remove here move into the final proof of the balls: total time out of the fridge (and the yeast) stay the same.',
       dirMixAt: 'I start (mix) on…',
       calAt: 'at…',
       docTitleDir: 'Neapolitan Pizza Direct — Calculator',
@@ -1439,6 +1458,7 @@
       mixer: state.mixer,
       friction: Math.min(15, Math.max(0, +$('friction').value)),
       mixMin: Math.min(40, Math.max(3, Math.round(+$('mixMin').value || mixMinDefault(state.mixer)))),
+      dirPullOut: $('dirPullOut').value === '' ? null : Math.min(4, Math.max(0, +$('dirPullOut').value || 0)),
       dirOre: Math.min(48, Math.max(6, Math.round(+$('dirOre').value || 24)))
     };
   }
@@ -1508,11 +1528,13 @@
     $('rowDBulkCold').hidden = !(diretta && s.frigo);
     $('rowDFridge').hidden = !(diretta && s.frigo);
     $('rowDPull').hidden = !(diretta && s.frigo);
+    $('fPullOut').hidden = !(diretta && s.frigo);
     $('rowDBulkTA').hidden = !(diretta && !s.frigo);
     if (diretta && s.frigo) {
       $('sDBulkCold').textContent = '~' + s.bulkMin + ' min';
       $('sDFridge').textContent = '~' + hMezze(s.fridgeH) + ' h';
       $('sDPull').textContent = '~' + hMezze(s.pullOutH) + ' h';
+      $('dirPullOut').placeholder = 'auto ' + hMezze(s.pullAutoH) + ' h';
     }
     if (diretta && !s.frigo) $('sDBulkTA').textContent = '~' + hMezze(s.bulkH) + ' h';
     if (diretta) {
@@ -1637,7 +1659,7 @@
   var PRESET_DIRETTA = {
     n: 6, peso: 277, idr: 63, saleGkg: 30, olioGkg: 0, secco: false,
     germe: false, malto: false, tAmb: 21, tFrigo: 4,
-    metodo: 'diretta', frigoDiretta: true, dirOre: 24, mixer: 'spirale'
+    metodo: 'diretta', frigoDiretta: true, dirOre: 24, mixer: 'spirale', dirPullOut: null
   };
 
   function setMetodo(m) {
@@ -1706,6 +1728,7 @@
     if (p.mixer != null) { setMixerState(p.mixer); $('friction').value = frictionDefault(state.mixer); $('mixMin').value = mixMinDefault(state.mixer); }
     if (p.friction != null) $('friction').value = p.friction;
     if (p.mixMin != null) $('mixMin').value = p.mixMin;
+    if ('dirPullOut' in p) $('dirPullOut').value = p.dirPullOut != null ? p.dirPullOut : '';
     if (p.dirOre != null) {
       var o = $('dirOre');
       o.value = Math.min(+o.max, Math.max(+o.min, p.dirOre));
@@ -1936,7 +1959,7 @@
   $('mixDate').addEventListener('change', onMixEdited);
   $('mixTime').addEventListener('change', onMixEdited);
 
-  ['nPanetti', 'pesoPanetto', 'idr', 'bigaPct', 'sale', 'olio', 'lievBiga', 'lievChiusura', 'maltoGkg', 'tAmb', 'tFrigo', 'friction'].forEach(function (id) {
+  ['nPanetti', 'pesoPanetto', 'idr', 'bigaPct', 'sale', 'olio', 'lievBiga', 'lievChiusura', 'maltoGkg', 'tAmb', 'tFrigo', 'friction', 'dirPullOut'].forEach(function (id) {
     $(id).addEventListener('input', onInput);
   });
   // i minuti di impastamento scalano l'attrito (≈ proporzionale al tempo)

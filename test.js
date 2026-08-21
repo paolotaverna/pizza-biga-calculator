@@ -302,6 +302,40 @@ eq('diretta: 1 + 17.5 + 2.5 + 3 = 24', sd.bulkMin / 60 + sd.fridgeH + sd.pullOut
   eq('codec mt clamp', queryToParams('mt=99').mixMin, 40);
 }
 
+// --- DIRETTA: fuori dal frigo regolabile (codec 'po') — le ore tolte passano all'appretto ---
+{
+  const H = 3600000, bake = 1000000000000;
+  const s0 = calcScheduleDiretta({ ...dbase, dirPullOut: 0 }, rd);
+  eq('staglio a freddo: fuori dal frigo = 0 h', s0.pullOutH, 0);
+  eq('staglio a freddo: appretto = 3 + 2.5 = 5.5 h', s0.apprettoH, 5.5);
+  eq('staglio a freddo: frigo invariato 17.5 h', s0.fridgeH, 17.5);
+  eq('staglio a freddo: totale ancora 24 h', s0.bulkMin / 60 + s0.fridgeH + s0.pullOutH + s0.apprettoH, 24);
+  eq('auto riportato nel risultato', s0.pullAutoH, 2.5);
+  const s1 = calcScheduleDiretta({ ...dbase, dirPullOut: 1 }, rd);
+  eq('1 h fuori: appretto 4.5 h', s1.apprettoH, 4.5);
+  eq('1 h fuori: frigo invariato', s1.fridgeH, 17.5);
+  eq('1.2 h -> arrotonda a 1 h', calcScheduleDiretta({ ...dbase, dirPullOut: 1.2 }, rd).pullOutH, 1);
+  eq('9 h -> clamp a 4 h', calcScheduleDiretta({ ...dbase, dirPullOut: 9 }, rd).pullOutH, 4);
+  eq('4 h fuori: appretto 1.5 h', calcScheduleDiretta({ ...dbase, dirPullOut: 4 }, rd).apprettoH, 1.5);
+  eq('null = automatico', calcScheduleDiretta({ ...dbase, dirPullOut: null }, rd).pullOutH, 2.5);
+  const sTA = calcScheduleDiretta({ ...dbase, frigoDiretta: false, dirOre: 8, dirPullOut: 0 }, rd);
+  const sTA0 = calcScheduleDiretta({ ...dbase, frigoDiretta: false, dirOre: 8 }, rd);
+  eq('T.A.: dirPullOut ignorato (appretto)', sTA.apprettoH, sTA0.apprettoH);
+  eq('lievito invariato con staglio a freddo (stesse ore fuori dal frigo)', lievDirettaPct({ ...dbase, dirPullOut: 0 }), lievDirettaPct(dbase));
+  const tl0 = calcTimelineDiretta(bake, s0);
+  eq('calendario a 0 h: niente riga fuori-frigo (5 tappe)', tl0.length, 5);
+  eq('calendario a 0 h: staglio subito dopo il frigo', tl0[2].k === 'dirFridgeIn' && tl0[3].k === 'calBalls', true);
+  eq('calendario a 0 h: frigo->staglio = 17.5 h', (tl0[3].at - tl0[2].at) / H, 17.5);
+  const tl1 = calcTimelineDiretta(bake, s1);
+  eq('calendario a 1 h: 6 tappe', tl1.length, 6);
+  eq('calendario a 1 h: fuori frigo 1 h prima dello staglio', (tl1[4].at - tl1[3].at) / H, 1);
+  const back = queryToParams(paramsToQuery({ n: 6, peso: 270, dirPullOut: 1.5 }));
+  eq('codec po round-trip', back.dirPullOut, 1.5);
+  eq('codec po clamp', queryToParams('po=9').dirPullOut, 4);
+  eq('codec po assente -> undefined', queryToParams('n=6').dirPullOut, undefined);
+  eq('codec po null -> non scritto', paramsToQuery({ n: 6, dirPullOut: null }).indexOf('po=') === -1, true);
+}
+
 // --- CODEC: metodo e percorso frigo ---
 {
   const backD = queryToParams(paramsToQuery({ n: 6, peso: 270, metodo: 'diretta', frigoDiretta: false, dirOre: 10 }));
