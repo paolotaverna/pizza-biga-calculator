@@ -109,11 +109,11 @@ eq('sched default = come 21/4', s.waterC, 18);
 }
 
 // --- DIRETTA: dose di lievito guidata dalle ore (benchmark verace) ---
-// Con frigo 24 h a 21/4: frigo = 24 - 1 - 2.5 - 3 = 17.5 h; ore equivalenti
-// a T.A. = 6.5 + 17.5 * 2^((4-21)/6); dose = 0.2% * 8 / eq.
+// Con frigo 24 h a 21/4: fuori 1 h + appretto 5 h -> frigo = 24 - 1 - 1 - 5 = 17 h;
+// ore equivalenti a T.A. = 7 + 17 * 2^((4-21)/6); dose = 0.2% * 8 / eq.
 {
   // percorso frigo: +40% (FRIGO_BOOST) per rigonfiare i panetti freddi
-  const eq24 = 6.5 + 17.5 * Math.pow(2, (4 - 21) / 6);
+  const eq24 = 7 + 17 * Math.pow(2, (4 - 21) / 6);
   eq('diretta lievito frigo 24 h (+40%)', lievDirettaPct({ frigoDiretta: true, dirOre: 24, tAmb: 21, tFrigo: 4 }), 0.002 * 8 / eq24 * 1.4, 1e-6);
   // il boost vale solo col frigo: a parità di ore equivalenti, T.A. non è toccato
   const fr = lievDirettaPct({ frigoDiretta: true, dirOre: 24, tAmb: 21, tFrigo: 4 });
@@ -198,9 +198,13 @@ eq('folds: a mano = consigliate', dirFolds({ idr: 63, mixer: 'mano' }).needed, t
 const sd = calcScheduleDiretta(dbase, rd);
 eq('diretta: ore totali = 24', sd.ore, 24);
 eq('diretta: puntata pre-frigo = 60 min', sd.bulkMin, 60);
-eq('diretta: frigo = 17.5 h', sd.fridgeH, 17.5);
-eq('diretta: fuori dal frigo = 2.5 h', sd.pullOutH, 2.5);
-eq('diretta: appretto = 3 h', sd.apprettoH, 3);
+eq('diretta: frigo = 17 h', sd.fridgeH, 17);
+eq('diretta: fuori dal frigo = 1 h', sd.pullOutH, 1);
+eq('diretta: appretto = 5 h a 21/4 (comprende ~2 h di riscaldamento dei panetti)', sd.apprettoH, 5);
+eq('diretta: appretto a 25 °C = 3.5 h', calcScheduleDiretta({ ...dbase, tAmb: 25 }, rd).apprettoH, 3.5);
+eq('diretta: appretto a 18 °C = 6 h', calcScheduleDiretta({ ...dbase, tAmb: 18 }, rd).apprettoH, 6);
+eq('diretta: frigo a 1 °C = +0.5 h di appretto', calcScheduleDiretta({ ...dbase, tFrigo: 1 }, rd).apprettoH, 5.5);
+eq('diretta: appretto minimo 3 h (27 °C)', calcScheduleDiretta({ ...dbase, tAmb: 27 }, rd).apprettoH, 3);
 eq('diretta: acqua = 16 °C (calori specifici)', sd.waterC, 16);
 {
   // bilancio termico esplicito: 24 - 6 = 18 °C di impasto, farina a 21 °C
@@ -228,14 +232,14 @@ eq('attrito NaN -> default mixer', frictionC({ mixer: 'mano', friction: NaN }), 
   eq('codec fr clamp', queryToParams('fr=40').friction, 15);
   eq('codec senza fr -> undefined', queryToParams('n=6').friction, undefined);
 }
-eq('diretta: 1 + 17.5 + 2.5 + 3 = 24', sd.bulkMin / 60 + sd.fridgeH + sd.pullOutH + sd.apprettoH, 24);
+eq('diretta: 1 + 17 + 1 + 5 = 24', sd.bulkMin / 60 + sd.fridgeH + sd.pullOutH + sd.apprettoH, 24);
 
 // --- DIRETTA: calendario — l'inizio è esattamente (infornata - ore) ---
 {
   const H = 3600000, bake = 1000000000000;
   const tl = calcTimelineDiretta(bake, sd);
   eq('diretta timeline frigo: 6 tappe', tl.length, 6);
-  eq('diretta timeline: staglio = -3 h', tl.find(x => x.k === 'calBalls').at, bake - 3 * H);
+  eq('diretta timeline: staglio = -5 h (appretto frigo a 21/4)', tl.find(x => x.k === 'calBalls').at, bake - 5 * H);
   eq('diretta timeline frigo: inizio = -24 h', tl[0].at, bake - 24 * H);
   const sTA = calcScheduleDiretta({ ...dbase, frigoDiretta: false, dirOre: 8 }, rd);
   const tl2 = calcTimelineDiretta(bake, sTA);
@@ -258,7 +262,7 @@ eq('diretta: 1 + 17.5 + 2.5 + 3 = 24', sd.bulkMin / 60 + sd.fridgeH + sd.pullOut
   eq('T.A. 6 h: appretto 4 h', ta(6).apprettoH, 4);
   eq('T.A. 6 h: puntata + appretto = 6', ta(6).bulkH + ta(6).apprettoH, 6);
   eq('T.A. 8 h a 27°: appretto resta 5.5 h', ta(8, { tAmb: 27 }).apprettoH, 5.5);
-  eq('frigo 24 h: appretto invariato 3 h', calcScheduleDiretta(dbase, rd).apprettoH, 3);
+  eq('frigo 24 h: appretto 5 h (non toccato dalla regola 20/80)', calcScheduleDiretta(dbase, rd).apprettoH, 5);
   const H = 3600000, bake = 1000000000000;
   const tl20 = calcTimelineDiretta(bake, ta(20));
   eq('T.A. 20 h timeline: staglio = -14 h', tl20.find(x => x.k === 'calBalls').at, bake - 14 * H);
@@ -307,17 +311,17 @@ eq('diretta: 1 + 17.5 + 2.5 + 3 = 24', sd.bulkMin / 60 + sd.fridgeH + sd.pullOut
   const H = 3600000, bake = 1000000000000;
   const s0 = calcScheduleDiretta({ ...dbase, dirPullOut: 0 }, rd);
   eq('staglio a freddo: fuori dal frigo = 0 h', s0.pullOutH, 0);
-  eq('staglio a freddo: appretto = 3 + 2.5 = 5.5 h', s0.apprettoH, 5.5);
-  eq('staglio a freddo: frigo invariato 17.5 h', s0.fridgeH, 17.5);
+  eq('staglio a freddo: appretto = 5 + 1 = 6 h', s0.apprettoH, 6);
+  eq('staglio a freddo: frigo invariato 17 h', s0.fridgeH, 17);
   eq('staglio a freddo: totale ancora 24 h', s0.bulkMin / 60 + s0.fridgeH + s0.pullOutH + s0.apprettoH, 24);
-  eq('auto riportato nel risultato', s0.pullAutoH, 2.5);
-  const s1 = calcScheduleDiretta({ ...dbase, dirPullOut: 1 }, rd);
-  eq('1 h fuori: appretto 4.5 h', s1.apprettoH, 4.5);
-  eq('1 h fuori: frigo invariato', s1.fridgeH, 17.5);
+  eq('auto riportato nel risultato', s0.pullAutoH, 1);
+  const s1 = calcScheduleDiretta({ ...dbase, dirPullOut: 2 }, rd);
+  eq('2 h fuori: appretto 4 h', s1.apprettoH, 4);
+  eq('2 h fuori: frigo invariato', s1.fridgeH, 17);
   eq('1.2 h -> arrotonda a 1 h', calcScheduleDiretta({ ...dbase, dirPullOut: 1.2 }, rd).pullOutH, 1);
   eq('9 h -> clamp a 4 h', calcScheduleDiretta({ ...dbase, dirPullOut: 9 }, rd).pullOutH, 4);
-  eq('4 h fuori: appretto 1.5 h', calcScheduleDiretta({ ...dbase, dirPullOut: 4 }, rd).apprettoH, 1.5);
-  eq('null = automatico', calcScheduleDiretta({ ...dbase, dirPullOut: null }, rd).pullOutH, 2.5);
+  eq('4 h fuori: appretto 2 h', calcScheduleDiretta({ ...dbase, dirPullOut: 4 }, rd).apprettoH, 2);
+  eq('null = automatico', calcScheduleDiretta({ ...dbase, dirPullOut: null }, rd).pullOutH, 1);
   const sTA = calcScheduleDiretta({ ...dbase, frigoDiretta: false, dirOre: 8, dirPullOut: 0 }, rd);
   const sTA0 = calcScheduleDiretta({ ...dbase, frigoDiretta: false, dirOre: 8 }, rd);
   eq('T.A.: dirPullOut ignorato (appretto)', sTA.apprettoH, sTA0.apprettoH);
@@ -325,10 +329,10 @@ eq('diretta: 1 + 17.5 + 2.5 + 3 = 24', sd.bulkMin / 60 + sd.fridgeH + sd.pullOut
   const tl0 = calcTimelineDiretta(bake, s0);
   eq('calendario a 0 h: niente riga fuori-frigo (5 tappe)', tl0.length, 5);
   eq('calendario a 0 h: staglio subito dopo il frigo', tl0[2].k === 'dirFridgeIn' && tl0[3].k === 'calBalls', true);
-  eq('calendario a 0 h: frigo->staglio = 17.5 h', (tl0[3].at - tl0[2].at) / H, 17.5);
+  eq('calendario a 0 h: frigo->staglio = 17 h', (tl0[3].at - tl0[2].at) / H, 17);
   const tl1 = calcTimelineDiretta(bake, s1);
-  eq('calendario a 1 h: 6 tappe', tl1.length, 6);
-  eq('calendario a 1 h: fuori frigo 1 h prima dello staglio', (tl1[4].at - tl1[3].at) / H, 1);
+  eq('calendario a 2 h: 6 tappe', tl1.length, 6);
+  eq('calendario a 2 h: fuori frigo 2 h prima dello staglio', (tl1[4].at - tl1[3].at) / H, 2);
   const back = queryToParams(paramsToQuery({ n: 6, peso: 270, dirPullOut: 1.5 }));
   eq('codec po round-trip', back.dirPullOut, 1.5);
   eq('codec po clamp', queryToParams('po=9').dirPullOut, 4);

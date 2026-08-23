@@ -703,7 +703,7 @@
       <div class="num">3</div>
       <div data-i18n="dstep3">
         <h3>Staglio e appretto</h3>
-        <p>Forma i panetti con pochi movimenti e mettili nei contenitori unti. Appretto per le ore del programma: pronto col <strong>test del dito</strong> — la fossetta risale piano.</p>
+        <p>Forma i panetti con pochi movimenti e mettili nei contenitori unti. Appretto per le ore del programma: pronto col <strong>test del dito</strong> — la fossetta risale piano.</p><p class="tip"><strong>Col frigo i panetti partono freddi</strong> (~13 °C al cuore): a 21 °C servono ~2 h solo per arrivare a 20 °C, e fino a lì il lievito lavora a metà. L'appretto del programma lo tiene già in conto; un posto a 24–26 °C (anche il forno spento con una brocca d'acqua bollente) accorcia di ~1 h. Obiettivo: cuore ≥ 20 °C due ore prima di infornare, 22–24 °C al lancio.</p>
       </div>
     </div>
     <div class="step">
@@ -884,15 +884,24 @@
 
   // Ore "equivalenti a temperatura ambiente" del percorso scelto: le ore di
   // frigo pesano 2^((tF−tA)/6), perché il freddo dimezza la velocità ogni ~6 °C.
+  // Percorso frigo: ore fuori dal frigo prima dello staglio + appretto.
+  // Misurato il 22/08/2026 (sonda nel panetto): il cuore sale da ~13 a 20 °C
+  // in ~2 h a 21 °C (~1.5 h a 25 °C), e finché è sotto i 20 °C il lievito va
+  // a metà velocità. Quindi: massa fuori solo 1 h (i panetti si scaldano molto
+  // più in fretta della massa) e appretto che comprende il riscaldamento:
+  // ~5 h a 21 °C, ~3.5 h a 25 °C; frigo più freddo = mezz'ora in più.
+  function dirFrigoSplit(tA, tF) {
+    var appr = 5 + (21 - tA) * 0.4 + (4 - tF) * 0.15;
+    appr = Math.min(7, Math.max(3, Math.round(appr * 2) / 2));
+    return { pullOutH: 1, apprettoH: appr };
+  }
   function dirEqOre(p) {
     var tA = p.tAmb == null ? 21 : p.tAmb;
     var tF = p.tFrigo == null ? 4 : p.tFrigo;
-    function clamp(v, lo, hi) { return Math.min(hi, Math.max(lo, v)); }
     var frigo = p.frigoDiretta !== false;
     var ore = dirOreClamp(p);
     if (!frigo) return ore;
-    var apprettoH = clamp(Math.round(3 * Math.pow(2, (21 - tA) / 6) * 2) / 2, 1.5, 5);
-    var pullOutH = clamp(Math.round((2 + (6 - tF) * 0.15 + (23 - tA) * 0.1) * 2) / 2, 1.5, 3);
+    var sp = dirFrigoSplit(tA, tF), apprettoH = sp.apprettoH, pullOutH = sp.pullOutH;
     var fridgeH = Math.max(4, ore - 1 - pullOutH - apprettoH);
     return (ore - fridgeH) + fridgeH * Math.pow(2, (tF - tA) / 6);
   }
@@ -957,8 +966,7 @@
     function clamp(v, lo, hi) { return Math.min(hi, Math.max(lo, v)); }
     var frigo = p.frigoDiretta !== false;
     var ore = dirOreClamp(p);
-    var apprettoH = clamp(Math.round(3 * Math.pow(2, (21 - tA) / 6) * 2) / 2, 1.5, 5);
-    var pullOutH = clamp(Math.round((2 + (6 - tF) * 0.15 + (23 - tA) * 0.1) * 2) / 2, 1.5, 3);
+    var sp = dirFrigoSplit(tA, tF), apprettoH = sp.apprettoH, pullOutH = sp.pullOutH;
     // Fuori dal frigo regolabile (solo percorso frigo, codec 'po'): 0 = staglio a
     // freddo. Le ore tolte qui passano all'appretto, così il tempo totale fuori
     // dal frigo (e quindi la dose di lievito) non cambia.
@@ -972,7 +980,10 @@
     // Percorso a T.A.: regola 20/80 — puntata corta, appretto lungo. Il gas che
     // gonfia il cornicione nasce nel panetto e le farine forti hanno bisogno di
     // ore per rilassarsi: appretto ≈70% delle ore (max 16 h), il resto puntata.
-    if (!frigo) apprettoH = clamp(Math.round(ore * 0.7 * 2) / 2, apprettoH, Math.max(apprettoH, Math.min(16, ore - 1)));
+    // (il minimo a T.A. è l'appretto "classico" 3 h a 21 °C, scalato con la
+    // temperatura — qui i panetti non partono freddi, niente ore di riscaldamento)
+    var apprMinTA = clamp(Math.round(3 * Math.pow(2, (21 - tA) / 6) * 2) / 2, 1.5, 5);
+    if (!frigo) apprettoH = clamp(Math.round(ore * 0.7 * 2) / 2, apprMinTA, Math.max(apprMinTA, Math.min(16, ore - 1)));
     var bulkH = Math.max(1, ore - apprettoH); // puntata del percorso a T.A.
     var fr = frictionC(p);
     var hFar = r.farinaTot * C_FARINA, hAcq = Math.max(r.acqua, 1) * C_ACQUA;
@@ -1163,7 +1174,7 @@
       dirFoldsCalNeed: '1–2 giri · idratazione alta o a mano',
       dstep1: '<h3>Impasto unico</h3><p>Una sola farina, con la forza indicata dal riquadro <strong>«La farina giusta»</strong>, e il lievito indicato dal calcolatore. Nella <strong>spirale</strong>: quasi tutta l\'acqua in vasca <strong>alla temperatura del programma</strong> con il lievito sciolto, farina a pioggia in <strong>1ª velocità</strong> (~100 giri/min) (8–10 minuti), <strong>sale a metà impastata</strong>, poi chiusura in <strong>2ª velocità</strong> (~175–200 giri/min) (2–3 minuti) con l\'ultima acqua fredda a filo. Pronto quando è liscio, si stacca dalla vasca e "scoppietta". Target: <strong>23–25 °C</strong> a fine impastata.</p><p class="tip"><strong>Come sciogliere il lievito:</strong> sbriciola il fresco in parte dell\'acqua (anche fredda va bene) finché sparisce, poi unisci la farina; il sale a parte, mai a contatto diretto col lievito. Il secco istantaneo va invece mescolato direttamente nella farina.</p>',
       dstep2: '<h3>Puntata — con frigo o a temperatura ambiente</h3><p><strong>Con frigo:</strong> massa coperta a T.A. per la puntata del programma, poi in frigorifero per le ore indicate: il freddo matura l\'impasto e regala estensibilità e sapore. Il giorno dopo, fuori dal frigo per il tempo del programma prima dello staglio.</p><p><strong>A temperatura ambiente:</strong> puntata per le ore del programma, massa coperta, ed è già ora di staglio.</p>',
-      dstep3: '<h3>Staglio e appretto</h3><p>Forma i panetti con pochi movimenti e mettili nei contenitori unti. Appretto per le ore del programma: pronto col <strong>test del dito</strong> — la fossetta risale piano.</p>',
+      dstep3: '<h3>Staglio e appretto</h3><p>Forma i panetti con pochi movimenti e mettili nei contenitori unti. Appretto per le ore del programma: pronto col <strong>test del dito</strong> — la fossetta risale piano.</p><p class="tip"><strong>Col frigo i panetti partono freddi</strong> (~13 °C al cuore): a 21 °C servono ~2 h solo per arrivare a 20 °C, e fino a lì il lievito lavora a metà. L\'appretto del programma lo tiene già in conto; un posto a 24–26 °C (anche il forno spento con una brocca d\'acqua bollente) accorcia di ~1 h. Obiettivo: cuore ≥ 20 °C due ore prima di infornare, 22–24 °C al lancio.</p>',
       dstep4: '<h3>Stesura e cottura</h3><p>Come sempre: semola sul banco, centro sottile, aria verso il bordo, forno rovente. La diretta dà una mollica più regolare della biga: cornicione ordinato, morso più delicato.</p>',
       day1: 'Giorno 1 · sera', theBiga: 'La biga',
       strongFlour: 'Farina forte <span class="note">W ≥ 300 (o Manitoba)</span>',
@@ -1296,7 +1307,7 @@
       dirFoldsCalNeed: '1–2 sets · high hydration or by hand',
       dstep1: '<h3>The single dough</h3><p>One flour, at the strength shown in the <strong>«The right flour»</strong> card, and the yeast dose shown by the calculator. In the <strong>spiral mixer</strong>: nearly all the water in the bowl <strong>at the temperature from the schedule</strong> with the yeast dissolved, flour rained in on <strong>1st speed</strong> (~100 rpm) (8–10 minutes), <strong>salt halfway through</strong>, then closing on <strong>2nd speed</strong> (~175–200 rpm) (2–3 minutes) with the last cold water in a stream. Ready when smooth, pulling away from the bowl and "crackling". Target: <strong>23–25 °C</strong> off the mixer.</p><p class="tip"><strong>How to add the yeast:</strong> crumble fresh yeast into part of the water (cold is fine) until it disappears, then add the flour; keep the salt separate, never in direct contact with the yeast. Instant dry yeast instead goes straight into the flour.</p>',
       dstep2: '<h3>Bulk — with fridge or at room temperature</h3><p><strong>With fridge:</strong> covered mass at room temp for the bulk rest in the schedule, then into the refrigerator for the hours shown: the cold matures the dough and buys extensibility and flavour. The next day, out of the fridge for the time in the schedule before dividing.</p><p><strong>Room temperature:</strong> bulk proof for the hours in the schedule, covered, and then it\'s time to divide.</p>',
-      dstep3: '<h3>Dividing and final proof</h3><p>Shape the balls with few movements and place them in oiled containers. Proof for the hours in the schedule: ready with the <strong>poke test</strong> — the dimple springs back slowly.</p>',
+      dstep3: '<h3>Dividing and final proof</h3><p>Shape the balls with few movements and place them in oiled containers. Proof for the hours in the schedule: ready with the <strong>poke test</strong> — the dimple springs back slowly.</p><p class="tip"><strong>With the fridge the balls start cold</strong> (~13 °C core): at 21 °C they need ~2 h just to reach 20 °C, and until then the yeast works at half speed. The schedule\'s proof already includes that warm-up; a 24–26 °C spot (even the oven switched off with a jug of boiling water) shortens it by ~1 h. Target: core ≥ 20 °C two hours before baking, 22–24 °C at launch.</p>',
       dstep4: '<h3>Stretching and baking</h3><p>As always: semolina on the bench, thin centre, air pushed to the rim, blazing oven. Direct dough gives a more regular crumb than biga: tidy cornicione, gentler bite.</p>',
       day1: 'Day 1 · evening', theBiga: 'The biga',
       strongFlour: 'Strong flour <span class="note">W ≥ 300 (or Manitoba)</span>',
