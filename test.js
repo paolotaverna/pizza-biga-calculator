@@ -10,8 +10,8 @@ function block(name) {
   if (!m) { console.error(`blocco ${name} non trovato in index.html`); process.exit(1); }
   return m[1];
 }
-const { calcDough, calcSchedule, calcTimeline, lievDirettaPct, dirWTier, dirHydraFlag, dirFolds, frictionC, mixMinDefault, preMixTempC, calibFriction, calcDiretta, calcScheduleDiretta, calcTimelineDiretta, paramsToQuery, queryToParams } = new Function(
-  block('CALC') + block('CODEC') + '; return { calcDough, calcSchedule, calcTimeline, lievDirettaPct, dirWTier, dirHydraFlag, dirFolds, frictionC, mixMinDefault, preMixTempC, calibFriction, mixMinDefault, preMixTempC, calibFriction, calcDiretta, calcScheduleDiretta, calcTimelineDiretta, paramsToQuery, queryToParams };'
+const { calcDough, calcSchedule, calcTimeline, lievDirettaPct, dirWTier, dirHydraFlag, dirFolds, frictionC, mixMinDefault, preMixTempC, calibFriction, calcDiretta, calcScheduleDiretta, calcTimelineDiretta, paramsToQuery, queryToParams, versionIsNewer, migrateRecipeParams, APP_VERSION } = new Function(
+  block('CALC') + block('CODEC') + '; return { calcDough, calcSchedule, calcTimeline, lievDirettaPct, dirWTier, dirHydraFlag, dirFolds, frictionC, mixMinDefault, preMixTempC, calibFriction, mixMinDefault, preMixTempC, calibFriction, calcDiretta, calcScheduleDiretta, calcTimelineDiretta, paramsToQuery, queryToParams, versionIsNewer, migrateRecipeParams, APP_VERSION };'
 )();
 
 let fails = 0;
@@ -386,6 +386,47 @@ eq('malto=0 -> false', c.malto, false);
 // --- CODEC: query vuota o spazzatura -> nessun campo ---
 eq('query vuota -> 0 campi', Object.keys(queryToParams('')).length, 0);
 eq('query spazzatura -> 0 campi', Object.keys(queryToParams('idr=abc&mode=farina&f=1000&foo=1')).length, 0);
+
+
+// --- VERSIONE: confronto e coerenza con public/version.json ---
+{
+  const vj = JSON.parse(fs.readFileSync(path.join(__dirname, 'public', 'version.json'), 'utf8'));
+  eq('version.json = APP_VERSION', vj.version, APP_VERSION);
+  eq('formato AAAA.MM.GG-n', /^\d{4}\.\d{2}\.\d{2}-\d+$/.test(APP_VERSION), true);
+  eq('stessa versione -> no', versionIsNewer('2026.10.12-1', '2026.10.12-1'), false);
+  eq('rilascio successivo dello stesso giorno -> sì', versionIsNewer('2026.10.12-1', '2026.10.12-2'), true);
+  eq('giorno dopo -> sì', versionIsNewer('2026.10.12-3', '2026.10.13-1'), true);
+  eq('versione più vecchia servita -> no', versionIsNewer('2026.10.13-1', '2026.10.12-9'), false);
+  eq('formato sconosciuto diverso -> sì', versionIsNewer('2026.10.12-1', 'abc'), true);
+  eq('servita vuota -> no', versionIsNewer('2026.10.12-1', ''), false);
+  eq('servita undefined -> no', versionIsNewer('2026.10.12-1', undefined), false);
+}
+
+// --- RICETTE SALVATE: migrazione dei parametri mancanti ---
+{
+  // ricetta di luglio 2026: solo i campi della biga, niente metodo/mixer/attrito
+  const old = { n: 6, peso: 270, idr: 70, bigaPct: 50, saleGkg: 20, olioGkg: 0, lievBigaPct: 1, lievChiusuraPct: 0.5, secco: false, germe: false, malto: false, maltoGkg: 5 };
+  const m = migrateRecipeParams(old);
+  eq('migra: metodo mancante -> biga', m.metodo, 'biga');
+  eq('migra: mixer -> spirale', m.mixer, 'spirale');
+  eq('migra: attrito -> default spirale 6', m.friction, 6);
+  eq('migra: minuti -> default spirale 13', m.mixMin, 13);
+  eq('migra: dirPullOut -> null (auto)', m.dirPullOut, null);
+  eq('migra: dirOre -> 24', m.dirOre, 24);
+  eq('migra: frigoDiretta -> true', m.frigoDiretta, true);
+  eq('migra: tAmb/tFrigo -> 21/4', m.tAmb + '/' + m.tFrigo, '21/4');
+  eq('migra: i campi presenti restano', m.idr, 70);
+  eq('migra: non muta l\'originale', 'mixer' in old, false);
+  const hand = migrateRecipeParams({ ...old, mixer: 'mano' });
+  eq('migra: a mano -> attrito 3, minuti 18', hand.friction + '/' + hand.mixMin, '3/18');
+  const full = migrateRecipeParams({ ...old, metodo: 'diretta', frigoDiretta: false, mixer: 'mano', friction: 4.5, mixMin: 20, dirPullOut: 2, dirOre: 10 });
+  eq('migra: ricetta completa invariata (attrito)', full.friction, 4.5);
+  eq('migra: ricetta completa invariata (pullOut)', full.dirPullOut, 2);
+  eq('migra: dirOre mancante su T.A. -> 8', migrateRecipeParams({ ...old, metodo: 'diretta', frigoDiretta: false }).dirOre, 8);
+  // le ore equivalenti e il lievito della ricetta migrata usano le formule correnti
+  const sched = calcScheduleDiretta(migrateRecipeParams({ ...old, metodo: 'diretta', idr: 63 }), calcDiretta(migrateRecipeParams({ ...old, metodo: 'diretta', idr: 63 })));
+  eq('ricetta migrata: appretto con la formula corrente (6.5 h)', sched.apprettoH, 6.5);
+}
 
 console.log(fails === 0 ? '\nALL TESTS PASSED' : `\n${fails} FAILURES`);
 process.exit(fails === 0 ? 0 : 1);

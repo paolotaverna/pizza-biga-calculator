@@ -1,13 +1,14 @@
 {
   "name": "pizza-biga-calculator",
   "version": "1.0.0",
-  "description": "Calcolatore interattivo e ricetta completa della mia pizza napoletana con biga, ispirata al video [«Pizza Napoletana con Biga»](https://www.youtube.com/watch?v=ZVU9D4OkviM) di Vincenzo Viscusi.",
+  "description": "Calcolatore interattivo della pizza napoletana di Paolo Taverna (con biga e diretta): dosi, programma a temperature di casa, calendario, ricette nel cloud.",
   "main": "test.js",
   "directories": {
     "doc": "docs"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "node test.js && node test-auth.mjs",
+    "release": "node tools/release.mjs"
   },
   "repository": {
     "type": "git",

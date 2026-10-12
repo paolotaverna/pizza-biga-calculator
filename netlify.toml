@@ -9,3 +9,10 @@
   [headers.values]
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"
+
+# version.json non va mai in cache: la pagina lo legge per capire se c'è
+# una versione nuova da ricaricare.
+[[headers]]
+  for = "/version.json"
+  [headers.values]
+    Cache-Control = "no-cache, no-store, must-revalidate"

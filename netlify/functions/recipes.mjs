@@ -27,6 +27,8 @@ export default async (req) => {
         name: String(r.name).slice(0, MAX_NAME),
         params: r.params,
         savedAt: typeof r.savedAt === 'string' ? r.savedAt : new Date().toISOString(),
+        // versione dell'app con cui è stata salvata (per capire quali parametri esistevano)
+        ...(typeof r.app === 'string' ? { app: r.app.slice(0, 20) } : {}),
       }));
     await store.setJSON(email, clean);
     return json(200, { recipes: clean });

@@ -317,6 +317,11 @@
 
   footer.colophon { margin-top: 3.5rem; font-size: .8rem; color: var(--muted); text-align: center; }
   footer.colophon a { color: var(--accent); }
+  footer.colophon .ver { margin: .35rem 0 0; font-size: .72rem; font-variant-numeric: tabular-nums; }
+  #updateBar { position: fixed; left: 50%; bottom: 1rem; transform: translateX(-50%); z-index: 50; display: flex; align-items: center; gap: .75rem; max-width: calc(100% - 2rem); padding: .55rem .7rem .55rem 1.1rem; border-radius: 999px; background: var(--accent); color: #fff; font-size: .9rem; box-shadow: 0 8px 24px rgba(0,0,0,.2); }
+  #updateBar[hidden] { display: none; }
+  #updateBar button { font: inherit; font-weight: 600; color: var(--accent); background: #fff; border: 0; border-radius: 999px; padding: .3rem .85rem; cursor: pointer; white-space: nowrap; }
+  #updateBar button:hover, #updateBar button:focus-visible { background: #fbeae7; outline: none; }
 
   @media (prefers-reduced-motion: no-preference) {
     .qty, .totals strong { transition: opacity .15s ease; }
@@ -749,7 +754,12 @@
 
   <footer class="colophon">
     <p data-i18n="footer">La ricetta di Paolo Taverna. Lievito secco = metà dose del fresco.</p>
+    <p class="ver"><span data-i18n="verLabel">Versione</span> <span id="appVersion"></span> · <a href="https://github.com/paolotaverna/pizza-biga-calculator/blob/main/CHANGELOG.md" target="_blank" rel="noopener" data-i18n="whatsNew">Novità</a></p>
   </footer>
+</div>
+<div id="updateBar" role="status" hidden>
+  <span data-i18n="updateMsg">È uscita una nuova versione del calcolatore.</span>
+  <button type="button" id="updateBtn" data-i18n="updateBtn">Aggiorna</button>
 </div>
 
 <script>
@@ -1092,6 +1102,46 @@
     if (mx === 's') out.mixer = 'spirale';
     return out;
   }
+  // ---------- Versione dell'app ----------
+  // Formato AAAA.MM.GG-n (n = rilascio del giorno). Aggiornata da tools/release.mjs
+  // insieme a public/version.json: la pagina confronta le due e, se il server
+  // serve una versione più nuova, mostra la barra «Aggiorna».
+  var APP_VERSION = '2026.10.12-1';
+  function parseVersion(v) {
+    var m = typeof v === 'string' ? v.match(/^(\d{4})\.(\d{2})\.(\d{2})-(\d+)$/) : null;
+    return m ? [+m[1], +m[2], +m[3], +m[4]] : null;
+  }
+  // true se la versione servita è più nuova di quella caricata (versioni non
+  // riconosciute: basta che siano diverse)
+  function versionIsNewer(current, served) {
+    var a = parseVersion(current), b = parseVersion(served);
+    if (!a || !b) return typeof served === 'string' && served !== '' && served !== current;
+    for (var i = 0; i < 4; i++) { if (b[i] !== a[i]) return b[i] > a[i]; }
+    return false;
+  }
+
+  // Ricette salvate prima di un nuovo parametro: i campi mancanti prendono i
+  // valori di default del metodo, così caricarle non eredita lo stato dell'UI.
+  // Le ricette senza metodo sono con biga (la diretta è arrivata dopo).
+  function migrateRecipeParams(p) {
+    var q = {};
+    for (var k in p) if (Object.prototype.hasOwnProperty.call(p, k)) q[k] = p[k];
+    if (q.metodo !== 'diretta') q.metodo = 'biga';
+    if (q.frigoDiretta == null) q.frigoDiretta = true;
+    if (q.mixer !== 'mano') q.mixer = 'spirale';
+    if (q.friction == null || !isFinite(q.friction)) q.friction = frictionDefault(q.mixer);
+    if (q.mixMin == null || !isFinite(q.mixMin)) q.mixMin = mixMinDefault(q.mixer);
+    if (!('dirPullOut' in q) || (q.dirPullOut != null && !isFinite(q.dirPullOut))) q.dirPullOut = null;
+    if (q.dirOre == null || !isFinite(q.dirOre)) q.dirOre = q.frigoDiretta ? 24 : 8;
+    if (q.tAmb == null || !isFinite(q.tAmb)) q.tAmb = 21;
+    if (q.tFrigo == null || !isFinite(q.tFrigo)) q.tFrigo = 4;
+    if (q.secco == null) q.secco = false;
+    if (q.germe == null) q.germe = false;
+    if (q.malto == null) q.malto = false;
+    if (q.maltoGkg == null || !isFinite(q.maltoGkg)) q.maltoGkg = 5;
+    if (q.olioGkg == null || !isFinite(q.olioGkg)) q.olioGkg = 0;
+    return q;
+  }
   // === CODEC END ===
 
   var $ = function (id) { return document.getElementById(id); };
@@ -1231,6 +1281,9 @@
       segreti: '<p class="day">Segreti di bottega</p><h2>I segreti del panetto</h2><p>Quello che il disciplinare non scrive: i gesti che fanno gonfiare i panetti.</p><ol><li><strong>Staglio a chiusura stretta</strong> — 3–4 movimenti, pelle in tensione e chiusura pizzicata sotto: il gas resta dentro ed è lui a fare la cupola.</li><li><strong>Mai far fare la pelle</strong> — contenitore chiuso per tutto l\'appretto: dieci minuti d\'aria creano una crosticina che blocca lo sviluppo in forno.</li><li><strong>Regola 20/80</strong> — puntata corta, appretto lungo: il gas che gonfia il cornicione deve nascere dentro il panetto, dopo lo staglio.</li><li><strong>Il rigenero</strong> — panetto sgonfio o passato? Riforma la palla con delicatezza e aspetta 45–60 minuti: riparte come nuovo.</li><li><strong>Panetti a temperatura ambiente in forno</strong> — un panetto freddo si stende facile ma spinge poco; a 22–24 °C esplode. Dal frigo: 30–40 minuti fuori prima di stenderlo.</li><li><strong>Sale ben sciolto</strong> — deve sparire nell\'acqua prima che l\'impasto si stringa: i granelli tardivi tagliano la maglia.</li></ol>',
       fiocco: '<p class="day">Bonus</p><h2>La pizza "fiocco"</h2><p>Niente margherita: una farcitura dai «sapori semplici però molto goderecci» — da gattò di patate. Non è una pizza leggerissima, e va benissimo così.</p><ol><li><strong>Panna</strong> alla base</li><li><strong>Prosciutto cotto</strong> sfilacciato</li><li><strong>Mozzarella</strong>, non troppa</li><li><strong>Patata lessa schiacciata</strong>, in abbondanza</li><li><strong>Formaggio</strong>, tanto</li><li>Un giro d\'<strong>olio</strong> e <strong>pepe nero</strong></li></ol>',
       footer: 'La ricetta di Paolo Taverna. Lievito secco = metà dose del fresco.',
+      verLabel: 'Versione', whatsNew: 'Novità',
+      updateMsg: 'È uscita una nuova versione del calcolatore.', updateBtn: 'Aggiorna',
+      sumDir: 'diretta', sumFridge: 'frigo', sumRT: 'T.A.', sumHand: 'a mano',
       noteFresh: 'fresco', noteDry: 'secco', ballsOf: ' panetti da ',
       sumFresh: 'liev. fresco', sumDry: 'liev. secco', sumGerme: 'germe', sumMalto: 'malto',
       loadTitle: 'Carica questa ricetta', delAria: 'Elimina', recipeDefault: 'Ricetta '
@@ -1364,6 +1417,9 @@
       segreti: '<p class="day">Workshop secrets</p><h2>The dough-ball secrets</h2><p>What the disciplinare never writes down: the gestures that make dough balls puff.</p><ol><li><strong>Tight-sealed staglio</strong> — 3–4 movements, skin under tension, seam pinched closed underneath: the gas stays inside, and the gas is what builds the dome.</li><li><strong>Never let a skin form</strong> — container closed for the whole final proof: ten minutes of air makes a micro-crust that blocks oven spring.</li><li><strong>The 20/80 rule</strong> — short bulk, long final proof: the gas that puffs the cornicione must be born inside the ball, after dividing.</li><li><strong>The rigenero</strong> — ball gone flat or overproofed? Gently re-ball it and wait 45–60 minutes: it restarts like new.</li><li><strong>Balls at room temperature into the oven</strong> — a cold ball stretches easily but pushes weakly; at 22–24 °C it explodes. From the fridge: 30–40 minutes out before stretching.</li><li><strong>Salt fully dissolved</strong> — it must vanish in the water before the dough tightens: late grains cut the gluten network.</li></ol>',
       fiocco: '<p class="day">Bonus</p><h2>The "fiocco" pizza</h2><p>No margherita: a topping of «simple but very indulgent flavours» — potato-gattò territory. Not a light pizza, and that\'s perfectly fine.</p><ol><li><strong>Cream</strong> as the base</li><li><strong>Cooked ham</strong> (prosciutto cotto), shredded</li><li><strong>Mozzarella</strong>, not too much</li><li><strong>Crushed boiled potato</strong>, plenty</li><li><strong>Cheese</strong>, plenty</li><li>A drizzle of <strong>oil</strong> and <strong>black pepper</strong></li></ol>',
       footer: 'Paolo Taverna\'s recipe. Dry yeast = half the fresh dose.',
+      verLabel: 'Version', whatsNew: 'What\'s new',
+      updateMsg: 'A new version of the calculator is out.', updateBtn: 'Refresh',
+      sumDir: 'direct', sumFridge: 'fridge', sumRT: 'room temp', sumHand: 'by hand',
       noteFresh: 'fresh', noteDry: 'dry', ballsOf: ' balls of ',
       sumFresh: 'fresh yeast', sumDry: 'dry yeast', sumGerme: 'germ', sumMalto: 'malt',
       loadTitle: 'Load this recipe', delAria: 'Delete', recipeDefault: 'Recipe '
@@ -1843,11 +1899,16 @@
       }).catch(function () { showMsg('pwMsg', 'errNetwork'); });
   });
 
-  function recipeSummary(p) {
-    return p.n + '×' + Math.round(p.peso) + ' g · ' + p.idr + '% · biga ' + p.bigaPct + '%' +
+  function recipeSummary(p0) {
+    var p = migrateRecipeParams(p0);
+    var diretta = p.metodo === 'diretta';
+    var route = diretta
+      ? ' · ' + t('sumDir') + ' ' + p.dirOre + ' h ' + (p.frigoDiretta ? t('sumFridge') : t('sumRT'))
+      : ' · biga ' + p.bigaPct + '%';
+    return p.n + '×' + Math.round(p.peso) + ' g · ' + p.idr + '%' + route +
       ' · ' + (p.secco ? t('sumDry') : t('sumFresh')) +
-      (p.germe ? ' · ' + t('sumGerme') : '') + (p.malto ? ' · ' + t('sumMalto') : '') +
-      (p.olioGkg > 0 ? ' · ' + t('sumOlio') : '');
+      (!diretta && p.germe ? ' · ' + t('sumGerme') : '') + (!diretta && p.malto ? ' · ' + t('sumMalto') : '') +
+      (p.olioGkg > 0 ? ' · ' + t('sumOlio') : '') + (p.mixer === 'mano' ? ' · ' + t('sumHand') : '');
   }
 
   function renderRecipeList() {
@@ -1870,7 +1931,7 @@
       load.appendChild(nm);
       load.appendChild(meta);
       load.addEventListener('click', function () {
-        applyParams(rec.params);
+        applyParams(migrateRecipeParams(rec.params)); // ricette vecchie: parametri nuovi ai default
         $('recipeName').value = rec.name;
       });
       var del = document.createElement('button');
@@ -1893,7 +1954,7 @@
     if (!auth) return;
     var name = $('recipeName').value.trim();
     if (!name) name = t('recipeDefault') + (cloudRecipes.length + 1);
-    var rec = { name: name, params: readParams(), savedAt: new Date().toISOString() };
+    var rec = { name: name, params: readParams(), savedAt: new Date().toISOString(), app: APP_VERSION };
     var idx = cloudRecipes.findIndex(function (r) { return r.name === name; });
     if (idx >= 0) cloudRecipes[idx] = rec; else cloudRecipes.unshift(rec);
     $('recipeName').value = name;
@@ -2003,6 +2064,20 @@
     $('bakeDate').value = isoLocal(new Date(Date.now() + 86400000)).slice(0, 10);
     $('bakeTime').value = '19:00';
   })();
+
+  // ---------- Versione e avviso di aggiornamento ----------
+  $('appVersion').textContent = APP_VERSION;
+  $('updateBtn').addEventListener('click', function () { location.reload(); });
+  function checkVersion() {
+    if (location.protocol !== 'http:' && location.protocol !== 'https:') return; // file locale: niente
+    fetch('/version.json?t=' + Date.now(), { cache: 'no-store' })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (v) { if (v && versionIsNewer(APP_VERSION, v.version)) $('updateBar').hidden = false; })
+      .catch(function () { /* offline: riproviamo al prossimo giro */ });
+  }
+  setTimeout(checkVersion, 3000);
+  setInterval(checkVersion, 15 * 60 * 1000);
+  document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') checkVersion(); });
 
   // ---------- Avvio: lingua (URL > salvata), eventuale stato dall'URL, poi render ----------
   var savedLang = 'it';
