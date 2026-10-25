@@ -363,6 +363,25 @@ eq('diretta: 1 + 15.5 + 1 + 6.5 = 24', sd.bulkMin / 60 + sd.fridgeH + sd.pullOut
   eq('calendario a 2 h: fuori frigo 2 h prima dello staglio', (tl1[4].at - tl1[3].at) / H, 2);
   const back = queryToParams(paramsToQuery({ n: 6, peso: 270, dirPullOut: 1.5 }));
   eq('codec po round-trip', back.dirPullOut, 1.5);
+}
+// --- DIRETTA: lievito in più (codec 'lb', 0–100 %) — dose × (1+x), fermentazione dell'appretto ÷ (1+x)^0.8 ---
+{
+  eq('bump: dose +50 % esatta', lievDirettaPct({ ...dbase, lievBump: 50 }), lievDirettaPct(dbase) * 1.5, 1e-9);
+  eq('bump: +100 % = dose doppia (dopo il tetto)', lievDirettaPct({ ...dbase, lievBump: 100 }), lievDirettaPct(dbase) * 2, 1e-9);
+  eq('bump: oltre 100 → clamp', lievDirettaPct({ ...dbase, lievBump: 250 }), lievDirettaPct(dbase) * 2, 1e-9);
+  eq('bump: negativo → 0', lievDirettaPct({ ...dbase, lievBump: -30 }), lievDirettaPct(dbase), 1e-9);
+  eq('bump: ignorato a T.A.', lievDirettaPct({ ...dbase, frigoDiretta: false, dirOre: 8, lievBump: 100 }), lievDirettaPct({ ...dbase, frigoDiretta: false, dirOre: 8 }), 1e-9);
+  const b50 = calcScheduleDiretta({ ...dbase, lievBump: 50 }, rd);
+  eq('bump 50 a 21/4: appretto 5.5 h (era 6.5)', b50.apprettoH, 5.5);
+  eq('bump 50: appretto base riportato = 6.5', b50.apprettoBaseH, 6.5);
+  eq('bump 50: le ore tolte tornano al frigo (totale 24)', b50.fridgeH, 16.5);
+  eq('bump 100 a 21/4: appretto 5 h (il riscaldamento di 3 h resta)', calcScheduleDiretta({ ...dbase, lievBump: 100 }, rd).apprettoH, 5);
+  eq('bump 50 a 19 °C: 7.5 h invece di 9 (25/10/2026)', calcScheduleDiretta({ ...dbase, tAmb: 19, lievBump: 50 }, rd).apprettoH, 7.5);
+  eq('bump 0: nessun cambiamento', calcScheduleDiretta({ ...dbase, lievBump: 0 }, rd).apprettoH, sd.apprettoH);
+  eq('bump: a T.A. l\'appretto non cambia', calcScheduleDiretta({ ...dbase, frigoDiretta: false, dirOre: 8, lievBump: 100 }, rd).apprettoH, calcScheduleDiretta({ ...dbase, frigoDiretta: false, dirOre: 8 }, rd).apprettoH);
+  const lbBack = queryToParams(paramsToQuery({ n: 6, peso: 270, lievBump: 35 }));
+  eq('codec lb round-trip', lbBack.lievBump, 35);
+  eq('migrate: lievBump mancante → 0', migrateRecipeParams({ n: 6, peso: 270 }).lievBump, 0);
   eq('codec po clamp', queryToParams('po=9').dirPullOut, 4);
   eq('codec po assente -> undefined', queryToParams('n=6').dirPullOut, undefined);
   eq('codec po null -> non scritto', paramsToQuery({ n: 6, dirPullOut: null }).indexOf('po=') === -1, true);

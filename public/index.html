@@ -380,6 +380,13 @@
         <div class="hint" data-i18n="pullOutHint">Vuoto = automatico. 0 = staglio a freddo. Le ore che togli qui passano all'appretto dei panetti: il tempo totale fuori dal frigo (e il lievito) non cambia.</div>
       </div>
 
+      <div class="field only-diretta" id="fLievBump">
+        <label for="lievBump" data-i18n="bumpLabel">Lievito in più (%)</label>
+        <input type="number" id="lievBump" min="0" max="100" step="5" value="0">
+        <div class="hint" data-i18n="bumpHint">0 = dose del programma. Fino a +100 % (dose doppia): l'appretto dei panetti si accorcia e le ore tolte tornano al frigo. Solo percorso frigo.</div>
+        <div class="hint" id="bumpOut" hidden></div>
+      </div>
+
       <div class="duo">
         <div class="field">
           <label for="nPanetti" data-i18n="balls">Panetti</label>
@@ -913,9 +920,18 @@
   // partono a ~10 °C (massa a 4.5 °C + staglio) e il cuore arriva a 2 °C dalla
   // stanza solo dopo ~3 h (costante di tempo ~2 h), non 2: riscaldamento 3 h a
   // 21 °C; e sotto i 19 °C servivano ~8.5 h a dose normale: tetto a 9 h.
-  function dirFrigoSplit(tA, tF, peso) {
+  // Lievito in più (codec 'lb', 0–100 %): la dose del programma × (1 + x) e
+  // la parte di fermentazione dell'appretto ÷ (1 + x)^0.8 (il riscaldamento dei
+  // panetti non cambia). Taratura 25/10/2026: +50 % a 19 °C → ~7 h invece di 9.
+  function lievBumpPct(p) {
+    var b = p && isFinite(p.lievBump) ? +p.lievBump : 0;
+    return Math.min(100, Math.max(0, Math.round(b)));
+  }
+  function dirFrigoSplit(tA, tF, peso, bump) {
     var warm270 = Math.min(4, Math.max(1.5, 3 + (21 - tA) * 0.1));
     var ferment = 3.5 * Math.pow(2, (25 - tA) / 4.5) - warm270;
+    var b = isFinite(bump) ? Math.min(100, Math.max(0, bump)) : 0;
+    ferment = ferment / Math.pow(1 + b / 100, 0.8);
     var kg = Math.min(450, Math.max(150, peso > 0 ? peso : 270)); // panetti reali
     var warm = warm270 * Math.pow(kg / 270, 2 / 3);
     var appr = ferment + warm + (4 - tF) * 0.15;
@@ -957,7 +973,9 @@
     var eqH = dirEqOre(p);
     var pct = 0.002 * (8 / eqH) * Math.pow(2, (21 - tA) / 6);
     if (p.frigoDiretta !== false) pct *= FRIGO_BOOST;
-    return Math.min(0.005, Math.max(0.0005, pct));
+    pct = Math.min(0.005, Math.max(0.0005, pct));
+    if (p.frigoDiretta !== false) pct *= 1 + lievBumpPct(p) / 100; // dopo il tetto: +100 % = dose doppia
+    return pct;
   }
 
   // Forza della farina richiesta: la maturazione segue gli enzimi, che come il
@@ -1007,7 +1025,9 @@
     function clamp(v, lo, hi) { return Math.min(hi, Math.max(lo, v)); }
     var frigo = p.frigoDiretta !== false;
     var ore = dirOreClamp(p);
-    var sp = dirFrigoSplit(tA, tF, p.peso), apprettoH = sp.apprettoH, pullOutH = sp.pullOutH;
+    var bump = frigo ? lievBumpPct(p) : 0;
+    var sp = dirFrigoSplit(tA, tF, p.peso, bump), apprettoH = sp.apprettoH, pullOutH = sp.pullOutH;
+    var apprettoBaseH = bump > 0 ? dirFrigoSplit(tA, tF, p.peso, 0).apprettoH : apprettoH;
     // Fuori dal frigo regolabile (solo percorso frigo, codec 'po'): 0 = staglio a
     // freddo. Le ore tolte qui passano all'appretto, così il tempo totale fuori
     // dal frigo (e quindi la dose di lievito) non cambia.
@@ -1034,7 +1054,7 @@
     var massKg = r.impasto / 1000;
     var massLagH = dirMassaLag(massKg);
     var massWarn = frigo && fridgeH < massLagH + 4;
-    return { frigo: frigo, ore: ore, bulkMin: bulkMin, bulkH: bulkH, fridgeH: fridgeH, pullOutH: pullOutH, pullAutoH: pullAutoH, waterC: waterC, apprettoH: apprettoH, massKg: massKg, massLagH: massLagH, massWarn: massWarn };
+    return { frigo: frigo, ore: ore, bulkMin: bulkMin, bulkH: bulkH, fridgeH: fridgeH, pullOutH: pullOutH, pullAutoH: pullAutoH, waterC: waterC, apprettoH: apprettoH, apprettoBaseH: apprettoBaseH, lievBump: bump, massKg: massKg, massLagH: massLagH, massWarn: massWarn };
   }
 
   function calcTimelineDiretta(bakeMs, s) {
@@ -1081,7 +1101,8 @@
     ['do', 'dirOre', 6, 48],
     ['fr', 'friction', 0, 15],
     ['mt', 'mixMin', 3, 40],
-    ['po', 'dirPullOut', 0, 4]
+    ['po', 'dirPullOut', 0, 4],
+    ['lb', 'lievBump', 0, 100]
   ];
 
   function paramsToQuery(p) {
@@ -1129,7 +1150,7 @@
   // Formato AAAA.MM.GG-n (n = rilascio del giorno). Aggiornata da tools/release.mjs
   // insieme a public/version.json: la pagina confronta le due e, se il server
   // serve una versione più nuova, mostra la barra «Aggiorna».
-  var APP_VERSION = '2026.10.25-1';
+  var APP_VERSION = '2026.10.25-2';
   function parseVersion(v) {
     var m = typeof v === 'string' ? v.match(/^(\d{4})\.(\d{2})\.(\d{2})-(\d+)$/) : null;
     return m ? [+m[1], +m[2], +m[3], +m[4]] : null;
@@ -1155,6 +1176,7 @@
     if (q.friction == null || !isFinite(q.friction)) q.friction = frictionDefault(q.mixer);
     if (q.mixMin == null || !isFinite(q.mixMin)) q.mixMin = mixMinDefault(q.mixer);
     if (!('dirPullOut' in q) || (q.dirPullOut != null && !isFinite(q.dirPullOut))) q.dirPullOut = null;
+    if (q.lievBump == null || !isFinite(q.lievBump)) q.lievBump = 0;
     if (q.dirOre == null || !isFinite(q.dirOre)) q.dirOre = q.frigoDiretta ? 24 : 8;
     if (q.tAmb == null || !isFinite(q.tAmb)) q.tAmb = 21;
     if (q.tFrigo == null || !isFinite(q.tFrigo)) q.tFrigo = 4;
@@ -1237,6 +1259,9 @@
       dirOreHint: 'Il lievito si adatta alle ore: massimo 24 h a T.A., 48 h con frigo',
       pullOutLabel: 'Fuori dal frigo prima dello staglio (h)',
       pullOutHint: 'Vuoto = automatico. 0 = staglio a freddo. Le ore che togli qui passano all\'appretto dei panetti: il tempo totale fuori dal frigo (e il lievito) non cambia.',
+      bumpLabel: 'Lievito in più (%)',
+      bumpHint: '0 = dose del programma. Fino a +100 % (dose doppia): l\'appretto dei panetti si accorcia e le ore tolte tornano al frigo. Solo percorso frigo.',
+      bumpOut: 'Con +{x} % di lievito l\'appretto scende da {h0} a {h1} h',
       dirMixAt: 'Inizio (impasto) il…',
       calAt: 'alle…',
       docTitleDir: 'Pizza Napoletana Diretta — Calcolatore',
@@ -1308,7 +1333,7 @@
       footer: 'La ricetta di Paolo Taverna. Lievito secco = metà dose del fresco.',
       verLabel: 'Versione', whatsNew: 'Novità',
       updateMsg: 'È uscita una nuova versione del calcolatore.', updateBtn: 'Aggiorna',
-      sumDir: 'diretta', sumFridge: 'frigo', sumRT: 'T.A.', sumHand: 'a mano',
+      sumBump: 'lievito +{x} %', sumDir: 'diretta', sumFridge: 'frigo', sumRT: 'T.A.', sumHand: 'a mano',
       noteFresh: 'fresco', noteDry: 'secco', ballsOf: ' panetti da ',
       sumFresh: 'liev. fresco', sumDry: 'liev. secco', sumGerme: 'germe', sumMalto: 'malto',
       loadTitle: 'Carica questa ricetta', delAria: 'Elimina', recipeDefault: 'Ricetta '
@@ -1375,6 +1400,9 @@
       dirOreHint: 'The yeast adapts to the hours: max 24 h at room temp, 48 h with the fridge',
       pullOutLabel: 'Out of the fridge before dividing (h)',
       pullOutHint: 'Empty = automatic. 0 = ball straight from the fridge. Hours you remove here move into the final proof of the balls: total time out of the fridge (and the yeast) stay the same.',
+      bumpLabel: 'Extra yeast (%)',
+      bumpHint: '0 = the schedule\'s dose. Up to +100 % (double dose): the final proof of the balls gets shorter and the hours removed go back into the fridge. Fridge route only.',
+      bumpOut: 'With +{x} % yeast the final proof drops from {h0} to {h1} h',
       dirMixAt: 'I start (mix) on…',
       calAt: 'at…',
       docTitleDir: 'Neapolitan Pizza Direct — Calculator',
@@ -1446,7 +1474,7 @@
       footer: 'Paolo Taverna\'s recipe. Dry yeast = half the fresh dose.',
       verLabel: 'Version', whatsNew: 'What\'s new',
       updateMsg: 'A new version of the calculator is out.', updateBtn: 'Refresh',
-      sumDir: 'direct', sumFridge: 'fridge', sumRT: 'room temp', sumHand: 'by hand',
+      sumBump: 'yeast +{x} %', sumDir: 'direct', sumFridge: 'fridge', sumRT: 'room temp', sumHand: 'by hand',
       noteFresh: 'fresh', noteDry: 'dry', ballsOf: ' balls of ',
       sumFresh: 'fresh yeast', sumDry: 'dry yeast', sumGerme: 'germ', sumMalto: 'malt',
       loadTitle: 'Load this recipe', delAria: 'Delete', recipeDefault: 'Recipe '
@@ -1527,6 +1555,7 @@
       friction: Math.min(15, Math.max(0, +$('friction').value)),
       mixMin: Math.min(40, Math.max(3, Math.round(+$('mixMin').value || mixMinDefault(state.mixer)))),
       dirPullOut: $('dirPullOut').value === '' ? null : Math.min(4, Math.max(0, +$('dirPullOut').value || 0)),
+      lievBump: Math.min(100, Math.max(0, Math.round(+$('lievBump').value || 0))),
       dirOre: Math.min(48, Math.max(6, Math.round(+$('dirOre').value || 24)))
     };
   }
@@ -1599,6 +1628,9 @@
     $('rowDMass').hidden = !(diretta && s.frigo);
     $('massWarn').hidden = !(diretta && s.frigo && s.massWarn);
     $('fPullOut').hidden = !(diretta && s.frigo);
+    $('fLievBump').hidden = !(diretta && s.frigo);
+    $('bumpOut').hidden = !(diretta && s.frigo && s.lievBump > 0);
+    if (diretta && s.frigo && s.lievBump > 0) $('bumpOut').textContent = t('bumpOut').replace('{x}', s.lievBump).replace('{h0}', hMezze(s.apprettoBaseH)).replace('{h1}', hMezze(s.apprettoH));
     $('rowDBulkTA').hidden = !(diretta && !s.frigo);
     if (diretta && s.frigo) {
       $('sDBulkCold').textContent = '~' + s.bulkMin + ' min';
@@ -1732,7 +1764,7 @@
   var PRESET_DIRETTA = {
     n: 6, peso: 277, idr: 63, saleGkg: 30, olioGkg: 0, secco: false,
     germe: false, malto: false, tAmb: 21, tFrigo: 4,
-    metodo: 'diretta', frigoDiretta: true, dirOre: 24, mixer: 'spirale', dirPullOut: null
+    metodo: 'diretta', frigoDiretta: true, dirOre: 24, mixer: 'spirale', dirPullOut: null, lievBump: 0
   };
 
   function setMetodo(m) {
@@ -1802,6 +1834,7 @@
     if (p.friction != null) $('friction').value = p.friction;
     if (p.mixMin != null) $('mixMin').value = p.mixMin;
     if ('dirPullOut' in p) $('dirPullOut').value = p.dirPullOut != null ? p.dirPullOut : '';
+    if (p.lievBump != null) $('lievBump').value = p.lievBump;
     if (p.dirOre != null) {
       var o = $('dirOre');
       o.value = Math.min(+o.max, Math.max(+o.min, p.dirOre));
@@ -1937,6 +1970,7 @@
     var route = diretta
       ? ' · ' + t('sumDir') + ' ' + p.dirOre + ' h ' + (p.frigoDiretta ? t('sumFridge') : t('sumRT'))
       : ' · biga ' + p.bigaPct + '%';
+    if (diretta && p.frigoDiretta && p.lievBump > 0) route += ' · ' + t('sumBump').replace('{x}', p.lievBump);
     return p.n + '×' + Math.round(p.peso) + ' g · ' + p.idr + '%' + route +
       ' · ' + (p.secco ? t('sumDry') : t('sumFresh')) +
       (!diretta && p.germe ? ' · ' + t('sumGerme') : '') + (!diretta && p.malto ? ' · ' + t('sumMalto') : '') +
@@ -2037,7 +2071,7 @@
   $('mixDate').addEventListener('change', onMixEdited);
   $('mixTime').addEventListener('change', onMixEdited);
 
-  ['nPanetti', 'pesoPanetto', 'idr', 'bigaPct', 'sale', 'olio', 'lievBiga', 'lievChiusura', 'maltoGkg', 'tAmb', 'tFrigo', 'friction', 'dirPullOut'].forEach(function (id) {
+  ['nPanetti', 'pesoPanetto', 'idr', 'bigaPct', 'sale', 'olio', 'lievBiga', 'lievChiusura', 'maltoGkg', 'tAmb', 'tFrigo', 'friction', 'dirPullOut', 'lievBump'].forEach(function (id) {
     $(id).addEventListener('input', onInput);
   });
   // i minuti di impastamento scalano l'attrito (≈ proporzionale al tempo)
