@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026.10.25-1 · 2026-10-25
+
+- Diretta col frigo, dai dati del 24–25/10/2026 (sonda nella massa e nel panetto): nuova riga «Il freddo arriva al cuore della massa» (~3 h per kg perché il cuore scenda sotto i 10 °C: 8 h per 2.7 kg) con avviso quando il frigo è troppo corto per la massa; riscaldamento dei panetti 3 h a 21 °C (era 2: partono a ~10 °C e in cassetta chiusa il cuore arriva a 2 °C dalla stanza solo dopo ~3 h), sempre scalato sul peso del panetto; appretto fino a 9 h sotto i 19 °C (era 8); suggerimento sul frigo (vicino alla massa fa 1–2 °C meno del display); passo 2 spiega il ritardo della massa; passo 3 e regola della sonda contano da «2 °C sotto la stanza» e non più da 20 °C (in cucina a 19 °C non ci arriva mai); playbook PDF rigenerato
+
 ## 2026.10.12-1 · 2026-10-12
 
 - Versione visibile nel piè di pagina con link alle novità; avviso «Aggiorna» quando è online una versione nuova (controllo di version.json all'apertura, al ritorno sulla scheda e ogni 15 min); ricette salvate migrate ai parametri più recenti (metodo, impastatrice, attrito, minuti, ore fuori dal frigo) e riepilogo della diretta nella lista; ogni ricetta registra la versione con cui è stata salvata; script di rilascio tools/release.mjs (npm run release). Inoltre: appretto del percorso frigo 6½ h a 21 °C e scalato sul peso, regola della sonda, playbook PDF rigenerato.

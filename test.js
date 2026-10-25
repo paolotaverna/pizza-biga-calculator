@@ -10,8 +10,8 @@ function block(name) {
   if (!m) { console.error(`blocco ${name} non trovato in index.html`); process.exit(1); }
   return m[1];
 }
-const { calcDough, calcSchedule, calcTimeline, lievDirettaPct, dirWTier, dirHydraFlag, dirFolds, frictionC, mixMinDefault, preMixTempC, calibFriction, calcDiretta, calcScheduleDiretta, calcTimelineDiretta, paramsToQuery, queryToParams, versionIsNewer, migrateRecipeParams, APP_VERSION } = new Function(
-  block('CALC') + block('CODEC') + '; return { calcDough, calcSchedule, calcTimeline, lievDirettaPct, dirWTier, dirHydraFlag, dirFolds, frictionC, mixMinDefault, preMixTempC, calibFriction, mixMinDefault, preMixTempC, calibFriction, calcDiretta, calcScheduleDiretta, calcTimelineDiretta, paramsToQuery, queryToParams, versionIsNewer, migrateRecipeParams, APP_VERSION };'
+const { calcDough, calcSchedule, calcTimeline, lievDirettaPct, dirWTier, dirHydraFlag, dirFolds, frictionC, mixMinDefault, preMixTempC, calibFriction, calcDiretta, calcScheduleDiretta, calcTimelineDiretta, dirMassaLag, paramsToQuery, queryToParams, versionIsNewer, migrateRecipeParams, APP_VERSION } = new Function(
+  block('CALC') + block('CODEC') + '; return { calcDough, calcSchedule, calcTimeline, lievDirettaPct, dirWTier, dirHydraFlag, dirFolds, frictionC, mixMinDefault, preMixTempC, calibFriction, mixMinDefault, preMixTempC, calibFriction, calcDiretta, calcScheduleDiretta, calcTimelineDiretta, dirMassaLag, paramsToQuery, queryToParams, versionIsNewer, migrateRecipeParams, APP_VERSION };'
 )();
 
 let fails = 0;
@@ -110,11 +110,12 @@ eq('sched default = come 21/4', s.waterC, 18);
 
 // --- DIRETTA: dose di lievito guidata dalle ore (benchmark verace) ---
 // Con frigo 24 h a 21/4: fuori 1 h + appretto 6.5 h -> frigo = 24 - 1 - 1 - 6.5 = 15.5 h;
-// le ~2 h di riscaldamento dei panetti (cuore < 20 °C) valgono metà;
-// ore equivalenti a T.A. = 8.5 - 1 + 15.5 * 2^((4-21)/6); dose = 0.2% * 8 / eq.
+// le ~3 h di riscaldamento dei panetti (cuore lontano dalla stanza; 25/10/2026,
+// era 2 h) valgono metà; ore equivalenti a T.A. = 8.5 - 1.5 + 15.5 * 2^((4-21)/6);
+// dose = 0.2% * 8 / eq.
 {
   // percorso frigo: +40% (FRIGO_BOOST) per rigonfiare i panetti freddi
-  const eq24 = 8.5 - 1 + 15.5 * Math.pow(2, (4 - 21) / 6);
+  const eq24 = 8.5 - 1.5 + 15.5 * Math.pow(2, (4 - 21) / 6);
   eq('diretta lievito frigo 24 h (+40%)', lievDirettaPct({ frigoDiretta: true, dirOre: 24, tAmb: 21, tFrigo: 4 }), 0.002 * 8 / eq24 * 1.4, 1e-6);
   // il boost vale solo col frigo: a parità di ore equivalenti, T.A. non è toccato
   const fr = lievDirettaPct({ frigoDiretta: true, dirOre: 24, tAmb: 21, tFrigo: 4 });
@@ -122,7 +123,8 @@ eq('sched default = come 21/4', s.waterC, 18);
   eq('diretta: boost frigo = 1.4x del non-boost', fr, noBoost * 1.4, 1e-6);
   // 11/10/2026: l'appretto più lungo per il freddo non deve abbassare la dose
   // (3.5 g su 1466 g di farina sono bastati: massa +30–40% in frigo)
-  eq('diretta: dose a 21/4 resta ~0.23% (era 0.2385% col vecchio appretto di 5 h)', fr, 0.00231, 0.00003);
+  // 25/10/2026: riscaldamento 3 h invece di 2 → +5% (0.00231 → 0.00244)
+  eq('diretta: dose a 21/4 ~0.24% (era 0.2385% col vecchio appretto di 5 h, 0.231% con 2 h di riscaldamento)', fr, 0.00244, 0.00003);
 }
 eq('diretta lievito T.A. 8 h = 0.2% (nessun boost)', lievDirettaPct({ frigoDiretta: false, dirOre: 8, tAmb: 21 }), 0.002, 1e-6);
 eq('diretta lievito T.A. 10 h = 0.16%', lievDirettaPct({ frigoDiretta: false, dirOre: 10, tAmb: 21 }), 0.0016, 1e-6);
@@ -207,11 +209,25 @@ eq('diretta: fuori dal frigo = 1 h', sd.pullOutH, 1);
 eq('diretta: appretto = 6.5 h a 21/4 (comprende ~2 h di riscaldamento dei panetti; 5 h non bastavano l\'11/10/2026)', sd.apprettoH, 6.5);
 eq('diretta: appretto a 25 °C = 3.5 h (ancora misurata il 22/08/2026)', calcScheduleDiretta({ ...dbase, tAmb: 25 }, rd).apprettoH, 3.5);
 eq('diretta: appretto a 23 °C = 5 h', calcScheduleDiretta({ ...dbase, tAmb: 23 }, rd).apprettoH, 5);
-eq('diretta: appretto a 19 °C = 8 h (tetto)', calcScheduleDiretta({ ...dbase, tAmb: 19 }, rd).apprettoH, 8);
-eq('diretta: appretto a 18 °C = 8 h (tetto)', calcScheduleDiretta({ ...dbase, tAmb: 18 }, rd).apprettoH, 8);
+eq('diretta: appretto a 19 °C = 9 h (25/10/2026: ~8.5 h a dose normale)', calcScheduleDiretta({ ...dbase, tAmb: 19 }, rd).apprettoH, 9);
+eq('diretta: appretto a 18 °C = 9 h (tetto)', calcScheduleDiretta({ ...dbase, tAmb: 18 }, rd).apprettoH, 9);
 eq('diretta: frigo a 1 °C = +0.5 h di appretto', calcScheduleDiretta({ ...dbase, tFrigo: 1 }, rd).apprettoH, 7);
 eq('diretta: appretto minimo 3 h (27 °C)', calcScheduleDiretta({ ...dbase, tAmb: 27 }, rd).apprettoH, 3);
-eq('diretta: appretto a 18 °C non mangia il frigo sotto le 4 h (24 h)', calcScheduleDiretta({ ...dbase, tAmb: 18 }, rd).fridgeH, 14);
+eq('diretta: appretto a 18 °C non mangia il frigo sotto le 4 h (24 h)', calcScheduleDiretta({ ...dbase, tAmb: 18 }, rd).fridgeH, 13);
+// massa in frigo: ~3 h per kg perché il cuore scenda sotto i 10 °C (24–25/10/2026: 2.7 kg → 8 h)
+eq('massa: 2.7 kg → 8 h', dirMassaLag(2.7), 8);
+eq('massa: 1 kg → 3 h', dirMassaLag(1), 3);
+eq('massa: lotto di prova 1.68 kg → 5 h', sd.massLagH, 5);
+eq('massa: kg del lotto = impasto totale', sd.massKg, rd.impasto / 1000, 1e-9);
+eq('massa: tetto 10 h', dirMassaLag(5), 10);
+eq('massa: pavimento 1.5 h', dirMassaLag(0.2), 1.5);
+eq('massa: 24 h a 21/4 → frigo 15.5 h ≥ 5 + 4, nessun avviso', sd.massWarn, false);
+{
+  const big = { ...dbase, n: 10, peso: 270, dirOre: 16 };
+  const sb = calcScheduleDiretta(big, calcDiretta(big));
+  eq('massa: 2.7 kg con 16 h (frigo 7.5 h < 8 + 4) → avviso', sb.massWarn, true);
+  eq('massa: percorso T.A. non avvisa mai', calcScheduleDiretta({ ...big, frigoDiretta: false }, calcDiretta(big)).massWarn, false);
+}
 // peso del panetto: conta solo nel riscaldamento (∝ peso^(2/3) vs 270 g)
 eq('diretta: appretto 350 g a 21 °C = 7 h (+½ h di riscaldamento)', calcScheduleDiretta({ ...dbase, peso: 350 }, rd).apprettoH, 7);
 eq('diretta: appretto 200 g a 21 °C = 6 h', calcScheduleDiretta({ ...dbase, peso: 200 }, rd).apprettoH, 6);
