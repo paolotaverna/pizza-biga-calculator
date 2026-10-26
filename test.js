@@ -10,8 +10,8 @@ function block(name) {
   if (!m) { console.error(`blocco ${name} non trovato in index.html`); process.exit(1); }
   return m[1];
 }
-const { calcDough, calcSchedule, calcTimeline, lievDirettaPct, dirWTier, dirHydraFlag, dirFolds, frictionC, mixMinDefault, preMixTempC, calibFriction, calcDiretta, calcScheduleDiretta, calcTimelineDiretta, dirMassaLag, paramsToQuery, queryToParams, versionIsNewer, migrateRecipeParams, APP_VERSION } = new Function(
-  block('CALC') + block('CODEC') + '; return { calcDough, calcSchedule, calcTimeline, lievDirettaPct, dirWTier, dirHydraFlag, dirFolds, frictionC, mixMinDefault, preMixTempC, calibFriction, mixMinDefault, preMixTempC, calibFriction, calcDiretta, calcScheduleDiretta, calcTimelineDiretta, dirMassaLag, paramsToQuery, queryToParams, versionIsNewer, migrateRecipeParams, APP_VERSION };'
+const { calcDough, calcSchedule, calcTimeline, lievDirettaPct, dirWTier, dirHydraFlag, dirFolds, frictionC, mixMinDefault, preMixTempC, calibFriction, calcDiretta, calcScheduleDiretta, calcTimelineDiretta, dirMassaLag, linkDefaults, paramsToQuery, queryToParams, versionIsNewer, migrateRecipeParams, APP_VERSION } = new Function(
+  block('CALC') + block('CODEC') + '; return { calcDough, calcSchedule, calcTimeline, lievDirettaPct, dirWTier, dirHydraFlag, dirFolds, frictionC, mixMinDefault, preMixTempC, calibFriction, mixMinDefault, preMixTempC, calibFriction, calcDiretta, calcScheduleDiretta, calcTimelineDiretta, dirMassaLag, linkDefaults, paramsToQuery, queryToParams, versionIsNewer, migrateRecipeParams, APP_VERSION };'
 )();
 
 let fails = 0;
@@ -190,6 +190,13 @@ eq('folds: a mano = consigliate', dirFolds({ idr: 63, mixer: 'mano' }).needed, t
   const bk = queryToParams(paramsToQuery({ n: 6, peso: 270, mixer: 'mano' }));
   eq('codec mixer = mano', bk.mixer, 'mano');
   eq('codec mixer default = spirale', queryToParams(paramsToQuery({ n: 6, peso: 270 })).mixer, 'spirale');
+  // link con metodo diretto senza idratazione/sale → carattere della diretta
+  const bare = linkDefaults(queryToParams('?m=d&n=10&p=270'));
+  eq('link diretta nuda: idratazione 63 %', bare.idr, 63);
+  eq('link diretta nuda: sale 30 g/kg', bare.saleGkg, 30);
+  eq('link diretta con idr: resta', linkDefaults(queryToParams('?m=d&idr=65')).idr, 65);
+  eq('link biga nuda: nessun default aggiunto', 'idr' in linkDefaults(queryToParams('?m=b&n=6')), false);
+  eq('link senza metodo: intatto', Object.keys(linkDefaults(queryToParams('?n=6'))).length, 1);
 }
 
 // --- DIRETTA: germe e malto sono accessori della biga, qui ignorati ---

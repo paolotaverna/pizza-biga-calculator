@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026.10.26-1 · 2026-10-26
+
+- Link con metodo diretto senza idratazione/sale (es. ?m=d&n=10) apre col carattere della diretta (63 %, 30 g/kg) invece dei default della biga (70 %, 20 g/kg): linkDefaults() nel CODEC, applicata solo ai parametri letti dall'URL; le ricette salvate e i link completi non cambiano
+
 ## 2026.10.25-2 · 2026-10-25
 
 - Diretta col frigo: nuovo campo «Lievito in più (%)» (0–100, codec lb) — la dose del programma sale di x % (fino al doppio) e l'appretto dei panetti si accorcia di conseguenza (la fermentazione ÷ (1+x)^0.8, il riscaldamento resta), le ore tolte tornano al frigo; nota sotto il campo con «da 9 a 7½ h», riepilogo ricetta con «lievito +x %»; tarato sul 25/10/2026 (+50 % a 19 °C ≈ 7 h invece di 9); solo percorso frigo

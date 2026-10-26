@@ -1150,7 +1150,7 @@
   // Formato AAAA.MM.GG-n (n = rilascio del giorno). Aggiornata da tools/release.mjs
   // insieme a public/version.json: la pagina confronta le due e, se il server
   // serve una versione più nuova, mostra la barra «Aggiorna».
-  var APP_VERSION = '2026.10.25-2';
+  var APP_VERSION = '2026.10.26-1';
   function parseVersion(v) {
     var m = typeof v === 'string' ? v.match(/^(\d{4})\.(\d{2})\.(\d{2})-(\d+)$/) : null;
     return m ? [+m[1], +m[2], +m[3], +m[4]] : null;
@@ -1167,6 +1167,16 @@
   // Ricette salvate prima di un nuovo parametro: i campi mancanti prendono i
   // valori di default del metodo, così caricarle non eredita lo stato dell'UI.
   // Le ricette senza metodo sono con biga (la diretta è arrivata dopo).
+  // Link che nomina il metodo diretto senza idratazione/sale (es. ?m=d&n=10):
+  // apre col carattere della diretta (63 %, 30 g/kg — come PRESET_DIRETTA) e
+  // non con i default della pagina, che sono quelli della biga (70 %, 20 g/kg).
+  function linkDefaults(p) {
+    if (p.metodo === 'diretta') {
+      if (p.idr == null) p.idr = 63;
+      if (p.saleGkg == null) p.saleGkg = 30;
+    }
+    return p;
+  }
   function migrateRecipeParams(p) {
     var q = {};
     for (var k in p) if (Object.prototype.hasOwnProperty.call(p, k)) q[k] = p[k];
@@ -2154,7 +2164,7 @@
   try { savedUnit = localStorage.getItem(UNIT_KEY) || 'gkg'; } catch (e) { /* storage negato */ }
   state.unit = savedUnit === 'pct' ? 'pct' : 'gkg';
   setUnit(state.unit); // allinea etichette, limiti e valori mostrati
-  var fromUrl = queryToParams(location.search);
+  var fromUrl = linkDefaults(queryToParams(location.search));
   if (Object.keys(fromUrl).length > 0) applyParams(fromUrl);
   setLang(savedLang); // applica i testi e fa render + renderRecipeList
   updateAuthUI();
